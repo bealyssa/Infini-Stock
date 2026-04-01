@@ -1,0 +1,25 @@
+{
+    "name": "infini-stock-backend",
+    "version": "1.0.0",
+    "description": "Infini-Stock backend (Express + TypeORM + Supabase Postgres)",
+    "main": "src/index.js",
+    "scripts": {
+        "dev": "nodemon src/index.js",
+        "start": "node src/index.js",
+        "seed": "node scripts/seed.js",
+        "bootstrap-admin": "node src/scripts/bootstrap-admin.js"
+    },
+    "dependencies": {
+        "bcrypt": "^6.0.0",
+        "cors": "^2.8.5",
+        "dotenv": "^16.4.5",
+        "express": "^4.19.2",
+        "jsonwebtoken": "^9.0.2",
+        "pg": "^8.12.0",
+        "reflect-metadata": "^0.2.2",
+        "typeorm": "^0.3.20"
+    },
+    "devDependencies": {
+        "nodemon": "^3.1.4"
+    }
+}

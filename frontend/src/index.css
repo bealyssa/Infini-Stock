@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+    @apply scroll-smooth;
+}
+
+body {
+    @apply bg-black text-gray-100;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+}
+
+html {
+    @apply scroll-smooth;
+}
+
+a {
+    @apply text-gray-400 hover:text-gray-300 transition-colors;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    @apply bg-gray-900;
+}
+
+::-webkit-scrollbar-thumb {
+    @apply bg-gray-700 rounded hover:bg-gray-600;
+}
+
+/* Card shadows for dark mode */
+.card-dark {
+    @apply bg-black border border-gray-900 shadow-none;
+}
+
+.badge-lavender {
+    @apply bg-white text-black px-2 py-1 rounded text-xs font-medium;
+}
+
+/* Content page full width */
+.content-full {
+    @apply w-full;
+}
+
+.content-centered {
+    @apply mx-auto px-4 lg:px-8;
+}
