@@ -9,6 +9,7 @@ export const authApi = {
 }
 
 export const assetApi = {
+    listAssets: () => api.get('/assets'),
     scanAsset: (qrCode) => api.post('/assets/scan', { qrCode }),
     updateLocation: (qrCode, location) =>
         api.patch('/assets/location', { qrCode, location }),
@@ -22,6 +23,14 @@ export const assetApi = {
         }),
     iotScanUpdate: (qrCode, location, status) =>
         api.post('/assets/iot/scan-update', { qrCode, location, status }),
+}
+
+export const unitApi = {
+    listUnits: () => api.get('/units'),
+}
+
+export const monitorApi = {
+    listMonitors: () => api.get('/monitors'),
 }
 
 export const activityApi = {

@@ -22,6 +22,29 @@ async function scanAsset(req, res) {
     }
 }
 
+async function listAssets(req, res) {
+    try {
+        const assets = await assetService.listAssets()
+
+        return ok(
+            res,
+            assets.map((asset) => ({
+                id: asset.id,
+                qrCode: asset.qr_code,
+                type: asset.type,
+                status: asset.status,
+                location: asset.location,
+                parentId: asset.parent?.id || null,
+                parentQrCode: asset.parent?.qr_code || null,
+                createdBy: asset.creator?.full_name || null,
+                createdAt: asset.created_at,
+            })),
+        )
+    } catch {
+        return serverError(res, 'Failed to list assets')
+    }
+}
+
 async function updateLocation(req, res) {
     try {
         const { qrCode, location } = req.body
@@ -132,6 +155,7 @@ async function iotScanUpdate(req, res) {
 }
 
 module.exports = {
+    listAssets,
     scanAsset,
     updateLocation,
     updateStatus,

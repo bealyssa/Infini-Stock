@@ -1,27 +1,26 @@
--- Infini-Stock User Seed Data
--- Insert test users for all 5 roles (1 admin + 2 for each other role = 9 total users)
+-- Infini-Stock sample data manifest
+-- The runnable seed lives in ../scripts/seed.js because it hashes passwords and seeds every related table.
+-- This file documents the same connected sample set used by the JS seed.
 
-INSERT INTO profiles (id, full_name, email, role, is_active, created_at, updated_at) VALUES
--- Admin (1)
-('550e8400-e29b-41d4-a716-446655440001', 'Admin User', 'admin@infocom.com', 'admin', true, NOW(), NOW()),
+-- Seeded tables:
+-- profiles, locations, units, monitors, assets,
+-- monitor_assignments, asset_movements, asset_status_history, activity_logs
 
--- Manager (2)
-('550e8400-e29b-41d4-a716-446655440002', 'James Manager', 'james.manager@infocom.com', 'manager', true, NOW(), NOW()),
-('550e8400-e29b-41d4-a716-446655440003', 'Sarah Manager', 'sarah.manager@infocom.com', 'manager', true, NOW(), NOW()),
+-- Primary sample users:
+-- amara.santos@infini-stock.com / admin123
+-- james.carter@infini-stock.com / manager123
+-- miguel.torres@infini-stock.com / tech123
+-- john.reyes@infini-stock.com / staff123
+-- david.brooks@infini-stock.com / viewer123
 
--- Technician (2)
-('550e8400-e29b-41d4-a716-446655440004', 'Mike Technician', 'mike.tech@infocom.com', 'technician', true, NOW(), NOW()),
-('550e8400-e29b-41d4-a716-446655440005', 'Emma Technician', 'emma.tech@infocom.com', 'technician', true, NOW(), NOW()),
+-- Sample locations:
+-- LOC-HQ-NOC-01, LOC-HQ-IT-02, LOC-WH-REC-03, LOC-BR-SUP-04
 
--- Staff (2)
-('550e8400-e29b-41d4-a716-446655440006', 'John Staff', 'john.staff@infocom.com', 'staff', true, NOW(), NOW()),
-('550e8400-e29b-41d4-a716-446655440007', 'Lisa Staff', 'lisa.staff@infocom.com', 'staff', true, NOW(), NOW()),
+-- Sample system units:
+-- UNIT-HQ-001, UNIT-HQ-002, UNIT-WH-003
 
--- Viewer (2)
-('550e8400-e29b-41d4-a716-446655440008', 'David Viewer', 'david.viewer@infocom.com', 'viewer', true, NOW(), NOW()),
-('550e8400-e29b-41d4-a716-446655440009', 'Rachel Viewer', 'rachel.viewer@infocom.com', 'viewer', true, NOW(), NOW());
+-- Sample monitors:
+-- MON-HQ-001, MON-HQ-002, MON-HQ-003, MON-WH-004
 
--- Verification queries you can run to check:
--- SELECT COUNT(*) as total_users FROM profiles;
--- SELECT role, COUNT(*) FROM profiles GROUP BY role ORDER BY role;
--- SELECT id, full_name, email, role FROM profiles ORDER BY role;
+-- Sample asset QR codes:
+-- AST-UNIT-001, AST-UNIT-002, AST-UNIT-003, AST-MON-001, AST-MON-002, AST-MON-003

@@ -58,7 +58,7 @@ Infini-Stock/
 
    The server will:
    - Initialize TypeORM connection
-   - Synchronize all 7 database tables to Supabase
+   - Synchronize all 9 database tables to Supabase
    - Start listening on `http://0.0.0.0:5000`
 
 ### Frontend Setup
@@ -86,11 +86,13 @@ Infini-Stock/
 
 1. **profiles** - User accounts and roles
 2. **locations** - QR locations and clusters
-3. **assets** - System Units and Monitors with QR codes
-4. **monitor_assignments** - Track monitor-unit relationships
-5. **asset_movements** - Location change history
-6. **asset_status_history** - Status change audit trail
-7. **activity_logs** - All user actions
+3. **units** - System unit inventory records
+4. **monitors** - Monitor inventory records
+5. **assets** - System Units and Monitors with QR codes
+6. **monitor_assignments** - Track monitor-unit relationships
+7. **asset_movements** - Location change history
+8. **asset_status_history** - Status change audit trail
+9. **activity_logs** - All user actions
 
 ## 🎨 Frontend Pages
 
@@ -103,11 +105,16 @@ Infini-Stock/
 ## 🔌 API Endpoints
 
 ### Assets
+- `GET /api/assets` - List all assets
 - `POST /api/assets/scan` - Scan asset by QR
 - `PATCH /api/assets/location` - Update asset location
 - `PATCH /api/assets/status` - Update asset status
 - `POST /api/assets/swap-monitor` - Swap monitor assignment
 - `POST /api/assets/iot/scan-update` - IoT scan update
+
+### Inventory
+- `GET /api/units` - List system units
+- `GET /api/monitors` - List monitors
 
 ### Logs
 - `GET /api/activity-logs` - List activity logs

@@ -57,87 +57,77 @@ function ActivityLogs() {
                     </p>
                 </div>
 
-                <Card className="mb-8">
-                    <CardHeader>
-                        <CardTitle>Search Logs</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="relative">
-                            <Search className="absolute left-3 top-3 text-gray-500" size={20} />
-                            <Input
-                                placeholder="Search by action or asset QR code..."
-                                value={filter}
-                                onChange={(e) => setFilter(e.target.value)}
-                                className="pl-10"
-                            />
-                        </div>
-                    </CardContent>
-                </Card>
+                <div className="mb-4 rounded-xl border border-[#303030] bg-[#151515] p-4">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-3 text-gray-500" size={20} />
+                        <Input
+                            placeholder="Search by action or asset QR code..."
+                            value={filter}
+                            onChange={(e) => setFilter(e.target.value)}
+                            className="pl-10"
+                        />
+                    </div>
+                </div>
 
-                <Card className="mb-8">
-                    <CardHeader>
-                        <CardTitle>All Logs</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {loading ? (
-                            <div className="py-12 text-center">
-                                <div className="inline-block animate-spin">
-                                    <Activity className="text-gray-300" size={24} />
-                                </div>
-                                <p className="text-gray-400 mt-2">Loading logs...</p>
+                <div className="rounded-xl border border-[#303030] bg-[#151515] overflow-hidden mb-8">
+                    {loading ? (
+                        <div className="py-12 text-center">
+                            <div className="inline-block animate-spin">
+                                <Activity className="text-gray-300" size={24} />
                             </div>
-                        ) : error ? (
-                            <div className="p-6 text-red-400 bg-red-600/20 border-l-4 border-red-500 rounded">
-                                ⚠️ Error: {error}
-                            </div>
-                        ) : filteredLogs.length > 0 ? (
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Timestamp</TableHead>
-                                        <TableHead>Action</TableHead>
-                                        <TableHead>Asset</TableHead>
-                                        <TableHead>Old Value</TableHead>
-                                        <TableHead>New Value</TableHead>
+                            <p className="text-gray-400 mt-2">Loading logs...</p>
+                        </div>
+                    ) : error ? (
+                        <div className="m-6 rounded-lg border border-red-500/30 bg-red-600/20 p-6 text-red-300">
+                            ⚠️ Error: {error}
+                        </div>
+                    ) : filteredLogs.length > 0 ? (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Timestamp</TableHead>
+                                    <TableHead>Action</TableHead>
+                                    <TableHead>Asset</TableHead>
+                                    <TableHead>Old Value</TableHead>
+                                    <TableHead>New Value</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {filteredLogs.map((log) => (
+                                    <TableRow key={log.id}>
+                                        <TableCell className="text-xs text-gray-400">
+                                            {new Date(log.timestamp).toLocaleString()}
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant={getActionVariant(log.action)}>
+                                                {log.action}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            <code className="text-xs bg-gray-900 text-white px-2 py-1 rounded font-mono">
+                                                {log.assetQrCode?.slice(0, 16)}
+                                                {log.assetQrCode?.length > 16 && '...'}
+                                            </code>
+                                        </TableCell>
+                                        <TableCell className="text-gray-400 text-xs max-w-xs truncate">
+                                            {log.oldStatus || log.oldLocation ? log.oldStatus || log.oldLocation : '—'}
+                                        </TableCell>
+                                        <TableCell className="text-gray-300 text-xs max-w-xs truncate">
+                                            {log.newStatus || log.newLocation ? log.newStatus || log.newLocation : '—'}
+                                        </TableCell>
                                     </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {filteredLogs.map((log) => (
-                                        <TableRow key={log.id}>
-                                            <TableCell className="text-xs text-gray-400">
-                                                {new Date(log.timestamp).toLocaleString()}
-                                            </TableCell>
-                                            <TableCell>
-                                                <Badge variant={getActionVariant(log.action)}>
-                                                    {log.action}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell>
-                                                <code className="text-xs bg-gray-900 text-white px-2 py-1 rounded font-mono">
-                                                    {log.assetQrCode?.slice(0, 16)}
-                                                    {log.assetQrCode?.length > 16 && '...'}
-                                                </code>
-                                            </TableCell>
-                                            <TableCell className="text-gray-400 text-xs max-w-xs truncate">
-                                                {log.oldStatus || log.oldLocation ? log.oldStatus || log.oldLocation : '—'}
-                                            </TableCell>
-                                            <TableCell className="text-gray-300 text-xs max-w-xs truncate">
-                                                {log.newStatus || log.newLocation ? log.newStatus || log.newLocation : '—'}
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        ) : (
-                            <div className="py-12 text-center">
-                                <Activity className="text-gray-600 mx-auto mb-3" size={40} />
-                                <p className="text-gray-400">
-                                    {filter ? 'No logs found matching your search' : 'No activity logs yet'}
-                                </p>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    ) : (
+                        <div className="py-12 text-center">
+                            <Activity className="text-gray-600 mx-auto mb-3" size={40} />
+                            <p className="text-gray-400">
+                                {filter ? 'No logs found matching your search' : 'No activity logs yet'}
+                            </p>
+                        </div>
+                    )}
+                </div>
 
                 {filteredLogs.length > 0 && (
                     <Card>

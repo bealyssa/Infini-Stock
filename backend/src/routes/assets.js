@@ -7,6 +7,8 @@ const router = express.Router()
 // All asset endpoints require authentication
 // Each endpoint checks specific permissions
 
+router.get('/', requireAuth, requirePermission('asset:read'), assetsController.listAssets)
+
 router.post('/scan', requireAuth, requirePermission('asset:scan'), assetsController.scanAsset)
 router.patch('/location', requireAuth, requirePermission('asset:move'), assetsController.updateLocation)
 router.patch('/status', requireAuth, requirePermission('asset:update'), assetsController.updateStatus)

@@ -8,6 +8,8 @@ const authRoutes = require('./routes/auth')
 const adminRoutes = require('./routes/admin')
 const assetRoutes = require('./routes/assets')
 const activityLogRoutes = require('./routes/activityLogs')
+const unitRoutes = require('./routes/units')
+const monitorRoutes = require('./routes/monitors')
 
 const app = express()
 
@@ -33,8 +35,10 @@ app.use('/api/auth', authRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/assets', assetRoutes)
 app.use('/api/activity-logs', activityLogRoutes)
+app.use('/api/units', unitRoutes)
+app.use('/api/monitors', monitorRoutes)
 
-const port = 5000
+const port = Number(process.env.PORT || 5000)
 
 AppDataSource.initialize()
     .then(async () => {

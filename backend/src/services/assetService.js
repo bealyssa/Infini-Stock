@@ -8,6 +8,14 @@ async function getAssetByQr(qrCode) {
     })
 }
 
+async function listAssets() {
+    const assetRepo = AppDataSource.getRepository('Asset')
+    return assetRepo.find({
+        relations: { parent: true, creator: true },
+        order: { created_at: 'DESC' },
+    })
+}
+
 async function createActivityLog(payload) {
     const activityRepo = AppDataSource.getRepository('ActivityLog')
     const created = activityRepo.create(payload)
@@ -132,6 +140,7 @@ async function listActivityLogs(limit = 100) {
 
 module.exports = {
     getAssetByQr,
+    listAssets,
     updateAssetLocation,
     updateAssetStatus,
     swapMonitor,

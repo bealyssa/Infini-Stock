@@ -234,20 +234,20 @@ function Users() {
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead>
-                                <tr className="border-b border-[#404040]">
-                                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">
+                                <tr className="border-b border-[#d9d9d9] bg-white">
+                                    <th className="px-6 py-3 text-left text-sm font-semibold text-black">
                                         Name
                                     </th>
-                                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">
+                                    <th className="px-6 py-3 text-left text-sm font-semibold text-black">
                                         Email
                                     </th>
-                                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">
+                                    <th className="px-6 py-3 text-left text-sm font-semibold text-black">
                                         Role
                                     </th>
-                                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">
+                                    <th className="px-6 py-3 text-left text-sm font-semibold text-black">
                                         Status
                                     </th>
-                                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-300">
+                                    <th className="px-6 py-3 text-left text-sm font-semibold text-black">
                                         Actions
                                     </th>
                                 </tr>

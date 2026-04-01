@@ -1,48 +1,60 @@
 import { Activity, AlertCircle, CheckCircle, Zap } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { activityApi } from '../api'
+import { activityApi, assetApi } from '../api'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table'
 
 function Dashboard() {
+    const [assets, setAssets] = useState([])
     const [logs, setLogs] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
 
     useEffect(() => {
-        const fetchLogs = async () => {
+        const fetchData = async () => {
             try {
-                const { data } = await activityApi.listLogs(15)
-                setLogs(data)
+                const [assetResponse, logResponse] = await Promise.all([
+                    assetApi.listAssets(),
+                    activityApi.listLogs(15),
+                ])
+
+                setAssets(assetResponse.data)
+                setLogs(logResponse.data)
                 setError(null)
             } catch (err) {
-                setError(err.message)
+                setError(err.response?.data?.message || err.message)
             } finally {
                 setLoading(false)
             }
         }
-        fetchLogs()
+        fetchData()
     }, [])
+
+    const totalAssets = assets.length
+    const activeAssets = assets.filter((asset) => asset.status === 'active').length
+    const brokenAssets = assets.filter((asset) =>
+        ['broken', 'repair'].includes(asset.status),
+    ).length
 
     const stats = [
         {
             label: 'Total Assets',
-            value: '0',
+            value: String(totalAssets),
             color: 'white',
             icon: Zap,
             bg: 'bg-gray-900',
         },
         {
             label: 'Active',
-            value: '0',
+            value: String(activeAssets),
             color: 'green',
             icon: CheckCircle,
             bg: 'bg-gray-900',
         },
         {
             label: 'Broken/Repair',
-            value: '0',
+            value: String(brokenAssets),
             color: 'red',
             icon: AlertCircle,
             bg: 'bg-gray-900',
@@ -115,7 +127,7 @@ function Dashboard() {
                             </div>
                         ) : error ? (
                             <p className="py-4 text-red-400 bg-red-600/20 rounded-lg px-4">
-                                ⚠️ {error}
+                                Warning: {error}
                             </p>
                         ) : logs.length > 0 ? (
                             <Table>
