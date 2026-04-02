@@ -13,11 +13,30 @@ const monitorRoutes = require('./routes/monitors')
 
 const app = express()
 
-const allowedOrigins = ['http://localhost:5173']
+const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:56646',
+    'http://127.0.0.1:56646',
+    'http://localhost:3000',
+    'http://localhost:8080',
+    'http://192.168.1.2:5000',
+]
 
 app.use(
     cors({
-        origin: allowedOrigins,
+        origin: (origin, callback) => {
+            // Allow requests with no origin (like mobile apps or curl requests)
+            if (!origin) {
+                return callback(null, true);
+            }
+
+            // Check if origin is in allowlist or starts with localhost
+            if (allowedOrigins.includes(origin) || origin.startsWith('http://localhost:')) {
+                callback(null, true);
+            } else {
+                callback(new Error('Not allowed by CORS'));
+            }
+        },
         credentials: true,
     }),
 )

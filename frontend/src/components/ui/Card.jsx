@@ -4,7 +4,7 @@ import { cn } from '../../lib/utils'
 const Card = forwardRef(({ className, ...props }, ref) => (
     <div
         ref={ref}
-        className={cn('rounded-lg border border-[#404040] bg-[#171717] text-gray-100 shadow-none', className)}
+        className={cn('rounded-lg border border-[#3d2e5c] bg-[#171717] text-gray-100 shadow-none hover:border-[#4a3a6b] transition-colors', className)}
         {...props}
     />
 ))
@@ -13,7 +13,7 @@ Card.displayName = 'Card'
 const CardHeader = forwardRef(({ className, ...props }, ref) => (
     <div
         ref={ref}
-        className={cn('flex flex-col space-y-1.5 p-4 border-b border-gray-900', className)}
+        className={cn('flex flex-col space-y-1.5 p-4 border-b border-[#3d2e5c]', className)}
         {...props}
     />
 ))

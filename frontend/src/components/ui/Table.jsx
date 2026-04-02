@@ -2,7 +2,7 @@ import { forwardRef } from 'react'
 import { cn } from '../../lib/utils'
 
 const Table = forwardRef(({ className, ...props }, ref) => (
-    <div className="w-full overflow-auto rounded-xl border border-[#303030] bg-[#141414] shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
+    <div className="w-full overflow-auto rounded-xl border border-[#3d2e5c] bg-[#0f0a1a] shadow-[0_0_0_1px_rgba(147,51,234,0.1)]">
         <table
             ref={ref}
             className={cn('w-full caption-bottom text-sm', className)}
@@ -15,7 +15,7 @@ Table.displayName = 'Table'
 const TableHeader = forwardRef(({ className, ...props }, ref) => (
     <thead
         ref={ref}
-        className={cn('border-b border-[#d7d7d7] bg-white text-black', className)}
+        className={cn('border-b border-[#3d2e5c] bg-[#2d1f4a] text-lavender-300', className)}
         {...props}
     />
 ))
@@ -46,7 +46,7 @@ const TableRow = forwardRef(({ className, ...props }, ref) => (
     <tr
         ref={ref}
         className={cn(
-            'border-b border-[#262626] bg-[#171717] transition-colors hover:bg-[#1f1f1f] data-[state=selected]:bg-[#202020]',
+            'border-b border-[#2d215a] bg-[#171717] transition-colors hover:bg-[#1f1a2f] data-[state=selected]:bg-[#2d215a]',
             className,
         )}
         {...props}
@@ -58,7 +58,7 @@ const TableHead = forwardRef(({ className, ...props }, ref) => (
     <th
         ref={ref}
         className={cn(
-            'h-11 bg-white px-4 text-left align-middle text-[11px] font-semibold uppercase tracking-[0.14em] text-black [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
+            'h-11 bg-[#2d1f4a] px-4 text-left align-middle text-[11px] font-semibold uppercase tracking-[0.14em] text-lavender-300 [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
             className,
         )}
         {...props}

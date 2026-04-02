@@ -5,5 +5,6 @@ const unitsController = require('../controllers/unitsController')
 const router = express.Router()
 
 router.get('/', requireAuth, requirePermission('unit:read'), unitsController.listUnits)
+router.post('/', requireAuth, requirePermission('unit:create'), unitsController.createUnit)
 
 module.exports = router

@@ -5,5 +5,6 @@ const monitorsController = require('../controllers/monitorsController')
 const router = express.Router()
 
 router.get('/', requireAuth, requirePermission('monitor:read'), monitorsController.listMonitors)
+router.post('/', requireAuth, requirePermission('monitor:create'), monitorsController.createMonitor)
 
 module.exports = router

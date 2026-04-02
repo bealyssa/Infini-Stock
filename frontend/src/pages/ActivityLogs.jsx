@@ -57,19 +57,7 @@ function ActivityLogs() {
                     </p>
                 </div>
 
-                <div className="mb-4 rounded-xl border border-[#303030] bg-[#151515] p-4">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-3 text-gray-500" size={20} />
-                        <Input
-                            placeholder="Search by action or asset QR code..."
-                            value={filter}
-                            onChange={(e) => setFilter(e.target.value)}
-                            className="pl-10"
-                        />
-                    </div>
-                </div>
-
-                <div className="rounded-xl border border-[#303030] bg-[#151515] overflow-hidden mb-8">
+                <div className="rounded-xl border border-[#3d2e5c] bg-[#0f0a1a] overflow-hidden mb-8">
                     {loading ? (
                         <div className="py-12 text-center">
                             <div className="inline-block animate-spin">

@@ -107,71 +107,67 @@ function Dashboard() {
                 </div>
 
                 {/* Recent Activity */}
-                <Card className="mb-8">
-                    <CardHeader>
-                        <CardTitle className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-3">
-                                <Activity className="text-gray-300" size={24} />
-                                <span>Recent Activity</span>
+                <div className="mb-8">
+                    <div className="flex items-center justify-between gap-3 mb-4">
+                        <div className="flex items-center gap-3">
+                            <Activity className="text-lavender-400" size={24} />
+                            <h2 className="text-2xl font-semibold text-white">Recent Activity</h2>
+                        </div>
+                        <Badge>Live</Badge>
+                    </div>
+                    {loading ? (
+                        <div className="py-8 text-center">
+                            <div className="inline-block animate-spin">
+                                <Zap className="text-gray-400" size={24} />
                             </div>
-                            <Badge>Live</Badge>
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {loading ? (
-                            <div className="py-8 text-center">
-                                <div className="inline-block animate-spin">
-                                    <Zap className="text-gray-400" size={24} />
-                                </div>
-                                <p className="text-gray-400 mt-2">Loading...</p>
-                            </div>
-                        ) : error ? (
-                            <p className="py-4 text-red-400 bg-red-600/20 rounded-lg px-4">
-                                Warning: {error}
-                            </p>
-                        ) : logs.length > 0 ? (
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Timestamp</TableHead>
-                                        <TableHead>Action</TableHead>
-                                        <TableHead>Asset</TableHead>
-                                        <TableHead>Details</TableHead>
+                            <p className="text-gray-400 mt-2">Loading...</p>
+                        </div>
+                    ) : error ? (
+                        <p className="py-4 text-red-400 bg-red-600/20 rounded-lg px-4">
+                            Warning: {error}
+                        </p>
+                    ) : logs.length > 0 ? (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Timestamp</TableHead>
+                                    <TableHead>Action</TableHead>
+                                    <TableHead>Asset</TableHead>
+                                    <TableHead>Details</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {logs.map((log) => (
+                                    <TableRow key={log.id}>
+                                        <TableCell className="text-xs text-gray-400">
+                                            {new Date(log.timestamp).toLocaleTimeString()}
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge>{log.action}</Badge>
+                                        </TableCell>
+                                        <TableCell>
+                                            <code className="text-xs bg-[#2d1f4a] text-lavender-300 px-2 py-1 rounded">
+                                                {log.assetQrCode?.slice(0, 12)}
+                                            </code>
+                                        </TableCell>
+                                        <TableCell className="text-gray-400 text-xs">
+                                            {log.oldStatus && log.newStatus
+                                                ? `${log.oldStatus} → ${log.newStatus}`
+                                                : log.oldLocation &&
+                                                    log.newLocation
+                                                    ? `Moved to ${log.newLocation}`
+                                                    : '—'}
+                                        </TableCell>
                                     </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {logs.map((log) => (
-                                        <TableRow key={log.id}>
-                                            <TableCell className="text-xs text-gray-400">
-                                                {new Date(log.timestamp).toLocaleTimeString()}
-                                            </TableCell>
-                                            <TableCell>
-                                                <Badge>{log.action}</Badge>
-                                            </TableCell>
-                                            <TableCell>
-                                                <code className="text-xs bg-gray-900 text-white px-2 py-1 rounded">
-                                                    {log.assetQrCode?.slice(0, 12)}
-                                                </code>
-                                            </TableCell>
-                                            <TableCell className="text-gray-400 text-xs">
-                                                {log.oldStatus && log.newStatus
-                                                    ? `${log.oldStatus} → ${log.newStatus}`
-                                                    : log.oldLocation &&
-                                                        log.newLocation
-                                                        ? `Moved to ${log.newLocation}`
-                                                        : '—'}
-                                            </TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        ) : (
-                            <p className="py-8 text-center text-gray-500">
-                                No activity logs yet. Start tracking assets!
-                            </p>
-                        )}
-                    </CardContent>
-                </Card>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    ) : (
+                        <p className="py-8 text-center text-gray-500">
+                            No activity logs yet. Start tracking assets!
+                        </p>
+                    )}
+                </div>
             </div>
         </div>
     )

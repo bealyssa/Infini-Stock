@@ -189,25 +189,23 @@ function Users() {
 
     return (
         <div className="space-y-6 p-6">
-            <Card>
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-3xl font-bold text-white">
-                            Manage Users
-                        </h1>
-                        <p className="text-gray-400 mt-1">
-                            {users.length} total users
-                        </p>
-                    </div>
-                    <Button
-                        onClick={() => handleOpenDialog()}
-                        className="flex items-center gap-2"
-                    >
-                        <Plus size={20} />
-                        Add User
-                    </Button>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold text-white">
+                        Manage Users
+                    </h1>
+                    <p className="text-gray-400 mt-1">
+                        {users.length} total users
+                    </p>
                 </div>
-            </Card>
+                <Button
+                    onClick={() => handleOpenDialog()}
+                    className="flex items-center gap-2"
+                >
+                    <Plus size={20} />
+                    Add User
+                </Button>
+            </div>
 
             {error && (
                 <Card className="border-l-4 border-red-500">
@@ -234,20 +232,20 @@ function Users() {
                     <div className="overflow-x-auto">
                         <table className="w-full">
                             <thead>
-                                <tr className="border-b border-[#d9d9d9] bg-white">
-                                    <th className="px-6 py-3 text-left text-sm font-semibold text-black">
+                                <tr className="border-b border-[#3d2e5c] bg-[#2d1f4a]">
+                                    <th className="px-6 py-3 text-left text-sm font-semibold text-lavender-300">
                                         Name
                                     </th>
-                                    <th className="px-6 py-3 text-left text-sm font-semibold text-black">
+                                    <th className="px-6 py-3 text-left text-sm font-semibold text-lavender-300">
                                         Email
                                     </th>
-                                    <th className="px-6 py-3 text-left text-sm font-semibold text-black">
+                                    <th className="px-6 py-3 text-left text-sm font-semibold text-lavender-300">
                                         Role
                                     </th>
-                                    <th className="px-6 py-3 text-left text-sm font-semibold text-black">
+                                    <th className="px-6 py-3 text-left text-sm font-semibold text-lavender-300">
                                         Status
                                     </th>
-                                    <th className="px-6 py-3 text-left text-sm font-semibold text-black">
+                                    <th className="px-6 py-3 text-left text-sm font-semibold text-lavender-300">
                                         Actions
                                     </th>
                                 </tr>

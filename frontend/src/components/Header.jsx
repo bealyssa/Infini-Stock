@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LogOut, User } from 'lucide-react'
+import { User } from 'lucide-react'
 
 function Header() {
     const navigate = useNavigate()
@@ -33,15 +33,8 @@ function Header() {
         return () => clearInterval(interval)
     }, [])
 
-    const handleLogout = () => {
-        localStorage.removeItem('authToken')
-        localStorage.removeItem('user')
-        window.dispatchEvent(new Event('auth-change'))
-        navigate('/login')
-    }
-
     return (
-        <header className="fixed top-0 right-0 left-0 lg:left-64 h-16 bg-[#171717] border-b border-[#404040] flex items-center justify-between px-6 lg:px-8 z-30">
+        <header className="fixed top-0 right-0 left-0 lg:left-64 h-16 bg-[#1a0f2e] border-b border-[#3d2e5c] flex items-center justify-between px-6 lg:px-8 z-30">
             <div className="flex items-center gap-3">
                 {user && (
                     <div className="text-left">
@@ -55,21 +48,11 @@ function Header() {
                 )}
             </div>
 
-            <div className="flex items-center gap-6">
-                <div className="text-right">
-                    <p className="text-gray-300 font-semibold text-sm">
-                        {time}
-                    </p>
-                    <p className="text-gray-500 text-xs">{date}</p>
-                </div>
-
-                <button
-                    onClick={handleLogout}
-                    className="flex items-center gap-2 px-3 py-2 rounded-md bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 hover:border-red-500/50 text-red-400 hover:text-red-300 transition-all text-sm"
-                >
-                    <LogOut size={16} />
-                    Logout
-                </button>
+            <div className="text-right">
+                <p className="text-gray-300 font-semibold text-sm">
+                    {time}
+                </p>
+                <p className="text-gray-500 text-xs">{date}</p>
             </div>
         </header>
     )

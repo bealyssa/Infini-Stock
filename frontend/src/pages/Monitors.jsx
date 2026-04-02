@@ -207,12 +207,12 @@ function Monitors() {
                                 type="button"
                                 onClick={() => setStatusFilter(pill.key)}
                                 className={`rounded-full border px-4 py-2 text-sm transition ${statusFilter === pill.key
-                                    ? 'border-white bg-white text-black'
-                                    : 'border-[#333] bg-[#1b1b1b] text-gray-300 hover:border-[#555] hover:bg-[#202020]'
+                                    ? 'border-lavender-600 bg-lavender-600 text-white'
+                                    : 'border-[#3d2e5c] bg-[#1f1a2f] text-lavender-300 hover:border-lavender-500 hover:bg-lavender-500/10'
                                     }`}
                             >
                                 {pill.label}
-                                <span className="ml-2 rounded-full bg-black/20 px-2 py-0.5 text-xs">
+                                <span className="ml-2 rounded-full bg-black/40 px-2 py-0.5 text-xs">
                                     {pill.count}
                                 </span>
                             </button>
@@ -228,7 +228,7 @@ function Monitors() {
                     </div>
                 </div>
 
-                <div className="rounded-xl border border-[#303030] bg-[#151515] overflow-hidden">
+                <div className="rounded-xl border border-[#3d2e5c] bg-[#0f0a1a] overflow-hidden">
                     {loading ? (
                         <div className="py-12 text-center text-gray-400">
                             Loading monitors...
@@ -263,7 +263,7 @@ function Monitors() {
                                                 </div>
                                             </TableCell>
                                             <TableCell>
-                                                <code className="inline-flex rounded-md bg-[#111827] px-2.5 py-1 text-xs font-semibold text-white ring-1 ring-white/10">
+                                                <code className="inline-flex rounded-md bg-[#2d1f4a] px-2.5 py-1 text-xs font-semibold text-lavender-300 ring-1 ring-lavender-600/20">
                                                     {monitor.qrCode}
                                                 </code>
                                             </TableCell>
