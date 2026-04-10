@@ -1,5 +1,18 @@
 const assetService = require('../services/assetService')
 const { ok, badRequest, serverError } = require('../utils/http')
+const { PERMISSIONS, ROLE_HIERARCHY } = require('../config/roles')
+
+function roleHasPermission(role, permission) {
+    const allowedRoles = PERMISSIONS[permission] || []
+    if (allowedRoles.includes(role)) return true
+
+    const parentRoles = ROLE_HIERARCHY[role] || []
+    for (const parentRole of parentRoles) {
+        if (allowedRoles.includes(parentRole)) return true
+    }
+
+    return false
+}
 
 async function createAsset(req, res) {
     try {
@@ -106,6 +119,101 @@ async function listAssets(req, res) {
         )
     } catch {
         return serverError(res, 'Failed to list assets')
+    }
+}
+
+async function getAssetByQr(req, res) {
+    try {
+        const { qrCode } = req.params
+        if (!qrCode) return badRequest(res, 'qrCode is required')
+
+        const asset = await assetService.getAssetByQr(qrCode)
+        if (!asset) {
+            return ok(res, {
+                exists: false,
+                qrCode,
+                type: null,
+                status: null,
+                location: null,
+                imageData: null,
+                description: null,
+                parentId: null,
+                parentQrCode: null,
+                createdBy: null,
+                createdAt: null,
+            })
+        }
+
+        return ok(res, {
+            exists: true,
+            id: asset.id,
+            qrCode: asset.qr_code,
+            type: asset.type,
+            status: asset.status,
+            location: asset.location,
+            imageData: asset.image_data || null,
+            description: asset.description || null,
+            parentId: asset.parent?.id || null,
+            parentQrCode: asset.parent?.qr_code || null,
+            createdBy: asset.creator?.full_name || null,
+            createdAt: asset.created_at,
+        })
+    } catch {
+        return serverError(res, 'Failed to fetch asset')
+    }
+}
+
+async function upsertAssetMeta(req, res) {
+    try {
+        const { qrCode, type, imageData, description } = req.body || {}
+        if (!qrCode) return badRequest(res, 'qrCode is required')
+
+        if (imageData !== undefined && imageData !== null && typeof imageData !== 'string') {
+            return badRequest(res, 'imageData must be a base64 string or URL')
+        }
+
+        if (type !== undefined && type !== null) {
+            const allowedTypes = ['unit', 'monitor']
+            if (!allowedTypes.includes(type)) {
+                return badRequest(res, 'Invalid type')
+            }
+        }
+
+        const existing = await assetService.getAssetByQr(qrCode)
+        if (!existing) {
+            const role = req.auth?.role
+            if (!roleHasPermission(role, 'asset:create')) {
+                return res.status(403).json({ message: "Forbidden: Missing permission 'asset:create'" })
+            }
+        }
+
+        const result = await assetService.upsertAssetMeta({
+            qrCode,
+            type,
+            imageData: imageData || null,
+            description,
+            userId: req.auth?.userId,
+        })
+
+        if (result.error) {
+            const statusCode = result.statusCode || 400
+            return res.status(statusCode).json({ message: result.error })
+        }
+
+        const asset = result.asset
+        return ok(res, {
+            id: asset.id,
+            qrCode: asset.qr_code,
+            type: asset.type,
+            status: asset.status,
+            location: asset.location,
+            imageData: asset.image_data || null,
+            description: asset.description || null,
+            createdBy: asset.creator?.full_name || null,
+            createdAt: asset.created_at,
+        })
+    } catch {
+        return serverError(res, 'Failed to update asset metadata')
     }
 }
 
@@ -221,9 +329,11 @@ async function iotScanUpdate(req, res) {
 module.exports = {
     createAsset,
     listAssets,
+    getAssetByQr,
     scanAsset,
     updateLocation,
     updateStatus,
     swapMonitor,
     iotScanUpdate,
+    upsertAssetMeta,
 }

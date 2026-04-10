@@ -5,7 +5,7 @@ const Card = forwardRef(({ className, ...props }, ref) => (
     <div
         ref={ref}
         className={cn(
-            'rounded-lg border border-[#3d2e5c] bg-[#171717] text-gray-100 shadow-none hover:border-[#4a3a6b] transition-colors',
+            'rounded-2xl border border-white/10 bg-white/5 text-gray-100 backdrop-blur-xl shadow-2xl shadow-black/40 transition-colors hover:border-white/20',
             className,
         )}
         {...props}
@@ -16,7 +16,7 @@ Card.displayName = 'Card'
 const CardHeader = forwardRef(({ className, ...props }, ref) => (
     <div
         ref={ref}
-        className={cn('flex flex-col space-y-1.5 p-4 border-b border-[#3d2e5c]', className)}
+        className={cn('flex flex-col space-y-1.5 p-4 border-b border-white/10', className)}
         {...props}
     />
 ))

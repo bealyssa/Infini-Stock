@@ -1,4 +1,4 @@
-import { Download, Image, MoreHorizontal, Plus, Package } from 'lucide-react'
+import { Cpu, Download, Image, MoreHorizontal, Pencil, Plus, Package } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { unitApi } from '../api'
 import { Badge } from '../components/ui/Badge'
@@ -7,14 +7,18 @@ import { clampRowCount, exportToCsv, exportToDocx, exportToPdf } from '../lib/ex
 import { Button } from '../components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table'
+import FullPageLoader from '../components/FullPageLoader'
+import TablePagination from '../components/TablePagination'
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, useDialog } from '../components/ui/Dialog'
 import { Input } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
+import DeviceEditModal from '../components/DeviceEditModal'
 
 function SystemUnits() {
     const dialogState = useDialog()
     const exportDialogState = useDialog()
     const detailsDialogState = useDialog()
+    const editDialogState = useDialog()
     const [units, setUnits] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
@@ -24,6 +28,7 @@ function SystemUnits() {
     const [exportRows, setExportRows] = useState('50')
     const [exporting, setExporting] = useState(false)
     const [selectedUnit, setSelectedUnit] = useState(null)
+    const [editingUnit, setEditingUnit] = useState(null)
     const [formData, setFormData] = useState({
         deviceName: '',
         qrCode: '',
@@ -80,6 +85,19 @@ function SystemUnits() {
 
         return matchesStatus && matchesSearch
     })
+
+    const ITEMS_PER_PAGE = 10
+    const [currentPage, setCurrentPage] = useState(1)
+
+    useEffect(() => {
+        setCurrentPage(1)
+    }, [searchQuery, statusFilter, units.length])
+
+    const totalPages = Math.max(1, Math.ceil(filteredUnits.length / ITEMS_PER_PAGE))
+    const pagedUnits = filteredUnits.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE,
+    )
 
     const filterPills = [
         { key: 'all', label: 'All', count: units.length },
@@ -169,8 +187,17 @@ function SystemUnits() {
         detailsDialogState.onOpenChange(true)
     }
 
+    const openEdit = (unit) => {
+        setEditingUnit(unit)
+        editDialogState.onOpenChange(true)
+    }
+
+    if (loading) {
+        return <FullPageLoader title="Loading units..." />
+    }
+
     return (
-        <div className="content-full bg-[#171717]">
+        <div className="content-full">
             <div className="content-centered">
                 <div className="py-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                     <div>
@@ -484,43 +511,62 @@ function SystemUnits() {
                     </DialogContent>
                 </Dialog>
 
-                <div className="rounded-xl border border-[#3d2e5c] bg-[#0f0a1a] overflow-hidden">
-                    {loading ? (
-                        <div className="py-12 text-center text-gray-400">
-                            Loading units...
-                        </div>
-                    ) : error ? (
+                <DeviceEditModal
+                    open={editDialogState.open}
+                    onOpenChange={(open) => {
+                        editDialogState.onOpenChange(open)
+                        if (!open) setEditingUnit(null)
+                    }}
+                    type="unit"
+                    device={editingUnit}
+                    onSaved={(updatedUnit) => {
+                        setUnits((prev) =>
+                            prev.map((unit) =>
+                                unit.id === updatedUnit.id ? { ...unit, ...updatedUnit } : unit,
+                            ),
+                        )
+                    }}
+                />
+
+                <Card className="overflow-hidden">
+                    {error ? (
                         <div className="m-6 rounded-lg border border-red-500/30 bg-red-600/20 p-4 text-red-300">
                             Warning: {error}
                         </div>
                     ) : (
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Device</TableHead>
-                                    <TableHead>QR Code</TableHead>
-                                    <TableHead>Status</TableHead>
-                                    <TableHead>Location</TableHead>
-                                    <TableHead>Linked Monitors</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {filteredUnits.length > 0 ? (
-                                    filteredUnits.map((unit) => (
+                        <>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Device</TableHead>
+                                        <TableHead>QR Code</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead>Location</TableHead>
+                                        <TableHead>Linked Monitors</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {pagedUnits.length > 0 ? (
+                                        pagedUnits.map((unit) => (
                                         <TableRow key={unit.id}>
                                             <TableCell>
-                                                <div>
-                                                    <div className="font-medium text-white">
-                                                        {unit.deviceName}
+                                                <div className="flex items-start gap-3">
+                                                    <div className="mt-0.5 h-9 w-9 rounded-lg border border-white/10 bg-white/5 flex items-center justify-center text-lavender-200">
+                                                        <Cpu size={18} />
                                                     </div>
-                                                    <div className="text-xs text-gray-500 mt-1">
-                                                        Created by {unit.createdBy || 'Unknown'}
+                                                    <div className="min-w-0">
+                                                        <div className="font-medium text-white truncate">
+                                                            {unit.deviceName}
+                                                        </div>
+                                                        <div className="text-xs text-gray-500 mt-1 truncate">
+                                                            Created by {unit.createdBy || 'Unknown'}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </TableCell>
                                             <TableCell>
-                                                <code className="inline-flex rounded-md bg-[#111827] px-2.5 py-1 text-xs font-semibold text-white ring-1 ring-white/10">
+                                                <code className="text-xs bg-gray-900 text-white px-2 py-1 rounded font-mono">
                                                     {unit.qrCode}
                                                 </code>
                                             </TableCell>
@@ -534,19 +580,31 @@ function SystemUnits() {
                                                 {unit.monitorCount} linked monitor{unit.monitorCount === 1 ? '' : 's'}
                                             </TableCell>
                                             <TableCell className="text-right">
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="text-gray-300 hover:text-white"
-                                                    onClick={() => openDetails(unit)}
-                                                    aria-label={`View details for ${unit.deviceName}`}
-                                                >
-                                                    <MoreHorizontal size={18} />
-                                                </Button>
+                                                <div className="flex justify-end gap-1">
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="text-gray-300 hover:text-white"
+                                                        onClick={() => openEdit(unit)}
+                                                        aria-label={`Edit ${unit.deviceName}`}
+                                                    >
+                                                        <Pencil size={18} />
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="text-gray-300 hover:text-white"
+                                                        onClick={() => openDetails(unit)}
+                                                        aria-label={`View details for ${unit.deviceName}`}
+                                                    >
+                                                        <MoreHorizontal size={18} />
+                                                    </Button>
+                                                </div>
                                             </TableCell>
                                         </TableRow>
-                                    ))
+                                        ))
                                 ) : (
                                     <TableRow>
                                         <TableCell colSpan="6" className="text-center py-12">
@@ -562,10 +620,22 @@ function SystemUnits() {
                                         </TableCell>
                                     </TableRow>
                                 )}
-                            </TableBody>
-                        </Table>
+                                </TableBody>
+                            </Table>
+
+                            {filteredUnits.length > ITEMS_PER_PAGE ? (
+                                <div className="px-5 py-4 border-t border-white/10">
+                                    <TablePagination
+                                        align="center"
+                                        currentPage={currentPage}
+                                        totalPages={totalPages}
+                                        onPageChange={setCurrentPage}
+                                    />
+                                </div>
+                            ) : null}
+                        </>
                     )}
-                </div>
+                </Card>
             </div>
         </div>
     )

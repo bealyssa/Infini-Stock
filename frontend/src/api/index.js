@@ -13,9 +13,12 @@ export const authApi = {
 
 export const assetApi = {
     listAssets: () => api.get('/assets'),
+    getAssetByQr: (qrCode) => api.get(`/assets/qr/${encodeURIComponent(qrCode)}`),
     createAsset: ({ type, qrCode, location, status, parentQrCode, imageData, description } = {}) =>
         api.post('/assets', { type, qrCode, location, status, parentQrCode, imageData, description }),
     scanAsset: (qrCode) => api.post('/assets/scan', { qrCode }),
+    upsertAssetMeta: ({ qrCode, type, imageData, description } = {}) =>
+        api.patch('/assets/meta', { qrCode, type, imageData, description }),
     updateLocation: (qrCode, location) =>
         api.patch('/assets/location', { qrCode, location }),
     updateStatus: (qrCode, status) =>
@@ -32,10 +35,16 @@ export const assetApi = {
 
 export const unitApi = {
     listUnits: () => api.get('/units'),
+    createUnit: ({ deviceName, qrCode, status, location, description } = {}) =>
+        api.post('/units', { deviceName, qrCode, status, location, description }),
+    updateUnit: (id, payload = {}) => api.patch(`/units/${id}`, payload),
 }
 
 export const monitorApi = {
     listMonitors: () => api.get('/monitors'),
+    createMonitor: ({ deviceName, qrCode, status, description, linkedUnitId } = {}) =>
+        api.post('/monitors', { deviceName, qrCode, status, description, linkedUnitId }),
+    updateMonitor: (id, payload = {}) => api.patch(`/monitors/${id}`, payload),
 }
 
 export const activityApi = {

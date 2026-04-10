@@ -9,6 +9,13 @@ const router = express.Router()
 
 router.get('/', requireAuth, requirePermission('asset:read'), assetsController.listAssets)
 
+router.get(
+	'/qr/:qrCode',
+	requireAuth,
+	requirePermission('asset:read'),
+	assetsController.getAssetByQr,
+)
+
 router.post('/', requireAuth, requirePermission('asset:create'), assetsController.createAsset)
 
 router.post('/scan', requireAuth, requirePermission('asset:scan'), assetsController.scanAsset)
@@ -16,5 +23,7 @@ router.patch('/location', requireAuth, requirePermission('asset:move'), assetsCo
 router.patch('/status', requireAuth, requirePermission('asset:update'), assetsController.updateStatus)
 router.post('/swap-monitor', requireAuth, requirePermission('asset:swap'), assetsController.swapMonitor)
 router.post('/iot/scan-update', requireAuth, requirePermission('asset:scan'), assetsController.iotScanUpdate)
+
+router.patch('/meta', requireAuth, requirePermission('asset:update'), assetsController.upsertAssetMeta)
 
 module.exports = router

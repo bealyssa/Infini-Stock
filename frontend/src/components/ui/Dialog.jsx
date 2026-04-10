@@ -37,12 +37,13 @@ export function DialogContent({ children, className = '' }) {
         <>
             {/* Backdrop */}
             <div
-                className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+                className="fixed inset-0 z-40 bg-black/55 backdrop-blur-sm"
                 onClick={() => onOpenChange(false)}
             />
 
             {/* Modal */}
-            <div className={`fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border border-[#404040] bg-[#171717] p-6 shadow-lg animate-in fade-in zoom-in-95 ${className}`}
+            <div
+                className={`fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-2xl shadow-black/50 backdrop-blur-xl animate-in fade-in zoom-in-95 ${className}`}
             >
                 <button
                     onClick={() => onOpenChange(false)}

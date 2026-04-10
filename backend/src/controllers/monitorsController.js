@@ -93,7 +93,84 @@ async function listMonitors(req, res) {
     }
 }
 
+async function updateMonitor(req, res) {
+    try {
+        const { id } = req.params
+        const { deviceName, status, description, linkedUnitId } = req.body || {}
+
+        const allowedStatus = ['active', 'inactive', 'maintenance']
+        if (status && !allowedStatus.includes(status)) {
+            return res.status(400).json({ message: 'Invalid status' })
+        }
+
+        const monitorRepo = AppDataSource.getRepository('Monitor')
+        const unitRepo = AppDataSource.getRepository('Unit')
+
+        const monitor = await monitorRepo.findOne({
+            where: { id },
+            relations: { creator: true, linkedUnit: true },
+        })
+
+        if (!monitor) {
+            return res.status(404).json({ message: 'Monitor not found' })
+        }
+
+        if (typeof deviceName === 'string') {
+            const next = deviceName.trim()
+            if (!next) {
+                return res.status(400).json({ message: 'deviceName cannot be empty' })
+            }
+            monitor.device_name = next
+        }
+
+        if (typeof status === 'string') {
+            monitor.status = status
+        }
+
+        if (typeof description === 'string') {
+            monitor.description = description.trim() || null
+        }
+
+        if (linkedUnitId === null || linkedUnitId === undefined || linkedUnitId === '') {
+            monitor.linkedUnit = null
+        } else if (typeof linkedUnitId === 'string') {
+            const unit = await unitRepo.findOne({ where: { id: linkedUnitId } })
+            if (!unit) {
+                return res.status(404).json({ message: 'Linked unit not found' })
+            }
+            monitor.linkedUnit = unit
+        }
+
+        const saved = await monitorRepo.save(monitor)
+        const withRelations = await monitorRepo.findOne({
+            where: { id: saved.id },
+            relations: { creator: true, linkedUnit: true },
+        })
+
+        return ok(res, {
+            id: withRelations.id,
+            deviceName: withRelations.device_name,
+            qrCode: withRelations.qr_code,
+            status: withRelations.status,
+            description: withRelations.description,
+            createdBy: withRelations.creator?.full_name || null,
+            linkedUnit: withRelations.linkedUnit
+                ? {
+                    id: withRelations.linkedUnit.id,
+                    deviceName: withRelations.linkedUnit.device_name,
+                    qrCode: withRelations.linkedUnit.qr_code,
+                }
+                : null,
+            createdAt: withRelations.created_at,
+            updatedAt: withRelations.updated_at,
+        })
+    } catch {
+        return serverError(res, 'Failed to update monitor')
+    }
+}
+
 module.exports = {
     createMonitor,
     listMonitors,
+    updateMonitor,
 }

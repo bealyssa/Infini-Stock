@@ -28,6 +28,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table'
+import FullPageLoader from '../components/FullPageLoader'
+import TablePagination from '../components/TablePagination'
 
 const STATUS_ORDER = ['active', 'repair', 'broken', 'inactive', 'other']
 const STATUS_LABELS = {
@@ -286,13 +288,17 @@ function Dashboard() {
         },
     ]
 
+    if (loading) {
+        return <FullPageLoader title="Loading dashboard..." />
+    }
+
     return (
-        <div className="content-full bg-bg-dark min-h-screen">
+        <div className="content-full">
             <div className="content-centered py-8">
                 {/* Page title */}
                 <div className="mb-5">
-                    <h1 className="text-2xl font-semibold text-white">Dashboard</h1>
-                    <p className="mt-1 text-sm text-gray-400">Overview and recent system activity</p>
+                    <h1 className="text-4xl font-bold  text-white">Dashboard</h1>
+                    <p className="mt-1 text-lg text-gray-400">Overview and recent system activity</p>
                 </div>
 
                 {/* Date filter (for logs/charts) */}
@@ -308,7 +314,7 @@ function Dashboard() {
                                 type="date"
                                 value={dateFrom}
                                 onChange={(e) => setDateFrom(e.target.value)}
-                                className="flex h-10 w-full rounded-md border border-[#3d2e5c] bg-[#171717] px-3 py-2 text-sm text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lavender-600/50 focus-visible:border-lavender-500"
+                                className="flex h-10 w-full rounded-md border border-white/10 bg-black/20 px-3 py-2 text-sm text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lavender-600/50 focus-visible:border-white/20"
                             />
                         </div>
                         <div>
@@ -317,7 +323,7 @@ function Dashboard() {
                                 type="date"
                                 value={dateTo}
                                 onChange={(e) => setDateTo(e.target.value)}
-                                className="flex h-10 w-full rounded-md border border-[#3d2e5c] bg-[#171717] px-3 py-2 text-sm text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lavender-600/50 focus-visible:border-lavender-500"
+                                className="flex h-10 w-full rounded-md border border-white/10 bg-black/20 px-3 py-2 text-sm text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lavender-600/50 focus-visible:border-white/20"
                             />
                         </div>
                     </div>
@@ -360,8 +366,8 @@ function Dashboard() {
 
                 {/* Charts + Recent Activity in one grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-8 lg:[grid-template-rows:340px_auto] items-stretch">
-                    <Card className="lg:col-span-2 lg:row-start-1 flex flex-col border border-[#3d2e5c]/60 bg-gradient-to-r from-[#1a0f2e]/80 to-[#2d1f4d]/55 backdrop-blur-md shadow-lg shadow-black/30">
-                        <CardHeader className="pb-3 pt-4 px-5 border-b border-[#3d2e5c]/50">
+                    <Card className="lg:col-span-2 lg:row-start-1 flex flex-col">
+                        <CardHeader className="pb-3 pt-4 px-5">
                             <div>
                                 <CardTitle className="text-lg font-semibold text-white flex items-center gap-2">
                                     <TrendingUp size={18} className="text-lavender-400" />
@@ -447,8 +453,8 @@ function Dashboard() {
                         </CardContent>
                     </Card>
 
-                    <Card className="lg:col-start-3 lg:row-start-1 h-full flex flex-col border border-[#3d2e5c]/60 bg-gradient-to-r from-[#1a0f2e]/80 to-[#2d1f4d]/55 backdrop-blur-md shadow-lg shadow-black/30">
-                        <CardHeader className="pb-3 pt-4 px-5 border-b border-[#3d2e5c]/50">
+                    <Card className="lg:col-start-3 lg:row-start-1 h-full flex flex-col">
+                        <CardHeader className="pb-3 pt-4 px-5">
                             <div>
                                 <CardTitle className="text-lg font-semibold text-white flex items-center gap-2">
                                     <PieChartIcon size={18} className="text-lavender-400" />
@@ -528,8 +534,8 @@ function Dashboard() {
                     </Card>
 
                     {/* Recent Activity - aligned with Location (same row) */}
-                    <Card className="lg:col-span-2 lg:row-start-2 h-full flex flex-col border border-[#3d2e5c]/60 bg-gradient-to-r from-[#1a0f2e]/80 to-[#2d1f4d]/55 backdrop-blur-md shadow-lg shadow-black/30">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 pt-4 px-5 border-b border-[#3d2e5c]/50">
+                    <Card className="lg:col-span-2 lg:row-start-2 h-full flex flex-col">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 pt-4 px-5">
                             <div className="flex items-center gap-2">
                                 <Activity className="text-lavender-400" size={18} />
                                 <div>
@@ -553,7 +559,7 @@ function Dashboard() {
                                 <div className="overflow-x-auto">
                                     <Table>
                                         <TableHeader>
-                                            <TableRow className="border-b border-border-dark hover:bg-transparent">
+                                            <TableRow className="hover:bg-transparent">
                                                 <TableHead className="px-5 py-3 text-xs font-semibold uppercase text-gray-400">Name</TableHead>
                                                 <TableHead className="px-5 py-3 text-xs font-semibold uppercase text-gray-400">Timestamp</TableHead>
                                                 <TableHead className="px-5 py-3 text-xs font-semibold uppercase text-gray-400">Action</TableHead>
@@ -563,7 +569,7 @@ function Dashboard() {
                                         </TableHeader>
                                         <TableBody>
                                             {pagedLogs.map((log) => (
-                                                <TableRow key={log.id} className="border-b border-border-dark hover:bg-dark-700/30 transition-colors">
+                                                <TableRow key={log.id}>
                                                     <TableCell className="px-5 py-3 text-xs text-gray-300">
                                                         {log.userName || '—'}
                                                     </TableCell>
@@ -603,32 +609,20 @@ function Dashboard() {
                             )}
 
                             {filteredLogs.length > LOG_PAGE_SIZE ? (
-                                <div className="flex items-center justify-end gap-2 px-5 py-4 border-t border-[#3d2e5c]/50">
-                                    <Button
-                                        type="button"
-                                        variant="secondary"
-                                        size="sm"
-                                        disabled={logPage <= 0}
-                                        onClick={() => setLogPage((p) => Math.max(0, p - 1))}
-                                    >
-                                        Prev
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        variant="secondary"
-                                        size="sm"
-                                        disabled={logPage >= totalLogPages - 1}
-                                        onClick={() => setLogPage((p) => Math.min(totalLogPages - 1, p + 1))}
-                                    >
-                                        Next
-                                    </Button>
+                                <div className="px-5 py-4 border-t border-white/10">
+                                    <TablePagination
+                                        align="center"
+                                        currentPage={logPage + 1}
+                                        totalPages={totalLogPages}
+                                        onPageChange={(page) => setLogPage(page - 1)}
+                                    />
                                 </div>
                             ) : null}
                         </CardContent>
                     </Card>
 
-                    <Card className="lg:col-start-3 lg:row-start-2 h-full flex flex-col border border-[#3d2e5c]/60 bg-gradient-to-r from-[#1a0f2e]/80 to-[#2d1f4d]/55 backdrop-blur-md shadow-lg shadow-black/30">
-                        <CardHeader className="pb-3 pt-4 px-5 border-b border-[#3d2e5c]/50">
+                    <Card className="lg:col-start-3 lg:row-start-2 h-full flex flex-col">
+                        <CardHeader className="pb-3 pt-4 px-5">
                             <div>
                                 <CardTitle className="text-lg font-semibold text-white flex items-center gap-2">
                                     <BarChart3 size={18} className="text-lavender-400" />

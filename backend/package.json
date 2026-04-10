@@ -4,7 +4,8 @@
     "description": "Infini-Stock backend (Express + TypeORM + Supabase Postgres)",
     "main": "src/index.js",
     "scripts": {
-        "dev": "nodemon src/index.js",
+        "dev": "node src/index.js",
+        "dev:watch": "nodemon --signal SIGINT --delay 750ms src/index.js",
         "start": "node src/index.js",
         "seed": "node scripts/seed.js",
         "bootstrap-admin": "node src/scripts/bootstrap-admin.js"

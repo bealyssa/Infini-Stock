@@ -33,15 +33,27 @@ function Header() {
     const accountDialog = useDialog()
     const menuRef = useRef(null)
 
-    const pageTitle = useMemo(() => {
+    const pageMeta = useMemo(() => {
         const path = location.pathname || '/'
-        if (path === '/' || path === '') return 'DASHBOARD'
-        if (path.startsWith('/units')) return 'SYSTEM UNITS'
-        if (path.startsWith('/monitors')) return 'MONITORS'
-        if (path.startsWith('/qr-generator')) return 'QR GENERATOR'
-        if (path.startsWith('/logs')) return 'ACTIVITY LOGS'
-        if (path.startsWith('/admin/users')) return 'MANAGE USERS'
-        return 'DASHBOARD'
+        if (path === '/' || path === '') {
+            return { category: 'OVERVIEW', page: 'DASHBOARD' }
+        }
+        if (path.startsWith('/units')) {
+            return { category: 'DEVICE MANAGEMENT', page: 'SYSTEM UNITS' }
+        }
+        if (path.startsWith('/monitors')) {
+            return { category: 'DEVICE MANAGEMENT', page: 'MONITORS' }
+        }
+        if (path.startsWith('/qr-generator')) {
+            return { category: 'DEVICE MANAGEMENT', page: 'QR GENERATOR' }
+        }
+        if (path.startsWith('/logs')) {
+            return { category: 'ACCOUNT MANAGEMENT', page: 'ACTIVITY LOGS' }
+        }
+        if (path.startsWith('/admin/users')) {
+            return { category: 'ACCOUNT MANAGEMENT', page: 'MANAGE USERS' }
+        }
+        return { category: 'OVERVIEW', page: 'DASHBOARD' }
     }, [location.pathname])
 
     const [infoForm, setInfoForm] = useState({ full_name: '', email: '' })
@@ -219,7 +231,9 @@ function Header() {
                             <div className="flex items-center gap-3">
                                 <div className="text-left">
                                     <p className="text-gray-100 font-semibold text-xl tracking-wide">
-                                        {pageTitle}
+                                        <span className="text-gray-300/80">{pageMeta.category}</span>
+                                        <span className="text-gray-400/70"> / </span>
+                                        <span className="text-gray-100">{pageMeta.page}</span>
                                     </p>
                                 </div>
                             </div>

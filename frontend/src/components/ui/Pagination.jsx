@@ -26,28 +26,30 @@ const PaginationItem = forwardRef(({ className, ...props }, ref) => (
 ))
 PaginationItem.displayName = 'PaginationItem'
 
-const PaginationLink = forwardRef(({ isActive, disabled, className, ...props }, ref) => (
+const PaginationLink = forwardRef(
+    ({ isActive, disabled, variant, size, className, ...props }, ref) => (
     <Button
         ref={ref}
-        variant={isActive ? 'default' : 'outline'}
-        size="sm"
+        variant={isActive ? 'default' : variant || 'outline'}
+        size={size || 'sm'}
         disabled={disabled}
-        className={cn('h-9 w-9 p-0 rounded-md', className)}
+        className={cn('h-8 w-8 p-0 rounded-md text-xs', className)}
         {...props}
     />
-))
+    ),
+)
 PaginationLink.displayName = 'PaginationLink'
 
 const PaginationPrevious = forwardRef(({ className, ...props }, ref) => (
     <PaginationLink
         ref={ref}
         variant="outline"
-        size="default"
-        className={cn('gap-1 pr-2.5', className)}
+        size="sm"
+        className={cn('h-8 w-auto px-2 gap-1', className)}
         {...props}
     >
         <ChevronLeft className="h-4 w-4" />
-        <span className="hidden sm:inline-block">Previous</span>
+        <span>Prev</span>
     </PaginationLink>
 ))
 PaginationPrevious.displayName = 'PaginationPrevious'
@@ -56,11 +58,11 @@ const PaginationNext = forwardRef(({ className, ...props }, ref) => (
     <PaginationLink
         ref={ref}
         variant="outline"
-        size="default"
-        className={cn('gap-1 pl-2.5', className)}
+        size="sm"
+        className={cn('h-8 w-auto px-2 gap-1', className)}
         {...props}
     >
-        <span className="hidden sm:inline-block">Next</span>
+        <span>Next</span>
         <ChevronRight className="h-4 w-4" />
     </PaginationLink>
 ))

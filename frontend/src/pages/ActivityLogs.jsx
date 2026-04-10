@@ -6,14 +6,8 @@ import { capitalize } from '../lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table'
-import {
-    Pagination,
-    PaginationContent,
-    PaginationItem,
-    PaginationPrevious,
-    PaginationNext,
-    PaginationLink,
-} from '../components/ui/Pagination'
+import FullPageLoader from '../components/FullPageLoader'
+import TablePagination from '../components/TablePagination'
 
 function ActivityLogs() {
     const currentUser = (() => {
@@ -81,8 +75,22 @@ function ActivityLogs() {
         return variants[action] || 'secondary'
     }
 
+    const getInitials = (value) => {
+        const text = (value || '').trim()
+        if (!text) return '—'
+        const parts = text.split(/\s+/).filter(Boolean)
+        const first = parts[0]?.[0] || ''
+        const last = parts.length > 1 ? parts[parts.length - 1]?.[0] : ''
+        const initials = `${first}${last}`.toUpperCase()
+        return initials || text.slice(0, 2).toUpperCase()
+    }
+
+    if (loading) {
+        return <FullPageLoader title="Loading logs..." />
+    }
+
     return (
-        <div className="content-full bg-[#171717]">
+        <div className="content-full">
             <div className="content-centered">
                 <div className="py-8">
                     <h1 className="text-4xl font-bold text-white mb-2 flex items-center gap-2">
@@ -106,15 +114,8 @@ function ActivityLogs() {
                     />
                 </div>
 
-                <div className="rounded-xl border border-[#3d2e5c] bg-[#0f0a1a] overflow-hidden mb-8">
-                    {loading ? (
-                        <div className="py-12 text-center">
-                            <div className="inline-block animate-spin">
-                                <Activity className="text-gray-300" size={24} />
-                            </div>
-                            <p className="text-gray-400 mt-2">Loading logs...</p>
-                        </div>
-                    ) : error ? (
+                <Card className="overflow-hidden mb-8">
+                    {error ? (
                         <div className="m-6 rounded-lg border border-red-500/30 bg-red-600/20 p-6 text-red-300">
                             ⚠️ Error: {error}
                         </div>
@@ -122,9 +123,9 @@ function ActivityLogs() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
+                                    <TableHead>Name</TableHead>
                                     <TableHead>Timestamp</TableHead>
                                     <TableHead>Action</TableHead>
-                                    {isAdmin ? <TableHead>Name</TableHead> : null}
                                     <TableHead>Asset</TableHead>
                                     <TableHead>Old Value</TableHead>
                                     <TableHead>New Value</TableHead>
@@ -133,6 +134,16 @@ function ActivityLogs() {
                             <TableBody>
                                 {paginatedLogs.map((log) => (
                                     <TableRow key={log.id}>
+                                        <TableCell>
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-8 w-8 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[11px] font-semibold text-lavender-200">
+                                                    {getInitials(log.userName)}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <div className="text-sm text-gray-200 truncate">{log.userName || '—'}</div>
+                                                </div>
+                                            </div>
+                                        </TableCell>
                                         <TableCell className="text-xs text-gray-400">
                                             {new Date(log.timestamp).toLocaleString()}
                                         </TableCell>
@@ -141,11 +152,6 @@ function ActivityLogs() {
                                                 {capitalize(log.action)}
                                             </Badge>
                                         </TableCell>
-                                        {isAdmin ? (
-                                            <TableCell className="text-gray-200 text-sm">
-                                                {log.userName || '—'}
-                                            </TableCell>
-                                        ) : null}
                                         <TableCell>
                                             <code className="text-xs bg-gray-900 text-white px-2 py-1 rounded font-mono">
                                                 {log.assetQrCode?.slice(0, 16)}
@@ -170,7 +176,7 @@ function ActivityLogs() {
                             </p>
                         </div>
                     )}
-                </div>
+                </Card>
 
                 {filteredLogs.length > 0 && (
                     <Card>
@@ -184,65 +190,14 @@ function ActivityLogs() {
                                     </p>
                                 </div>
 
-                                {totalPages > 1 && (
-                                    <Pagination>
-                                        <PaginationContent className="gap-2">
-                                            <PaginationItem>
-                                                <PaginationPrevious
-                                                    onClick={() =>
-                                                        setCurrentPage((prev) =>
-                                                            prev > 1 ? prev - 1 : 1,
-                                                        )
-                                                    }
-                                                    disabled={currentPage === 1}
-                                                />
-                                            </PaginationItem>
-
-                                            {Array.from({ length: totalPages }, (_, i) => i + 1)
-                                                .filter(
-                                                    (page) =>
-                                                        page === 1 ||
-                                                        page === totalPages ||
-                                                        (page >= currentPage - 1 &&
-                                                            page <= currentPage + 1),
-                                                )
-                                                .map((page, index, arr) => (
-                                                    <div key={page}>
-                                                        {index > 0 && arr[index - 1] !== page - 1 && (
-                                                            <PaginationItem>
-                                                                <span className="text-gray-500">
-                                                                    ...
-                                                                </span>
-                                                            </PaginationItem>
-                                                        )}
-                                                        <PaginationItem>
-                                                            <PaginationLink
-                                                                isActive={page === currentPage}
-                                                                onClick={() =>
-                                                                    setCurrentPage(page)
-                                                                }
-                                                            >
-                                                                {page}
-                                                            </PaginationLink>
-                                                        </PaginationItem>
-                                                    </div>
-                                                ))}
-
-                                            <PaginationItem>
-                                                <PaginationNext
-                                                    onClick={() =>
-                                                        setCurrentPage((prev) =>
-                                                            prev < totalPages
-                                                                ? prev + 1
-                                                                : totalPages,
-                                                        )
-                                                    }
-                                                    disabled={currentPage === totalPages}
-                                                />
-                                            </PaginationItem>
-                                        </PaginationContent>
-                                    </Pagination>
-                                )}
+                                {totalPages > 1 ? (
+                                    <TablePagination
+                                        align="center"
+                                        currentPage={currentPage}
+                                        totalPages={totalPages}
+                                        onPageChange={setCurrentPage}
+                                    />
+                                ) : null}
                             </div>
                         </CardContent>
                     </Card>

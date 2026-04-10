@@ -10,13 +10,26 @@ function Sidebar() {
     const navigate = useNavigate()
     const logoutDialog = useDialog()
 
-    const menuItems = [
-        { path: '/', label: 'Dashboard', icon: BarChart3 },
-        { path: '/units', label: 'System Units', icon: Package },
-        { path: '/monitors', label: 'Monitors', icon: Monitor },
-        { path: '/qr-generator', label: 'QR Generator', icon: QrCode },
-        { path: '/logs', label: 'Activity Logs', icon: Activity },
-        { path: '/admin/users', label: 'Manage Users', icon: Users },
+    const menuGroups = [
+        {
+            title: 'Overview',
+            items: [{ path: '/', label: 'Dashboard', icon: BarChart3 }],
+        },
+        {
+            title: 'Device Management',
+            items: [
+                { path: '/units', label: 'System Units', icon: Package },
+                { path: '/monitors', label: 'Monitors', icon: Monitor },
+                { path: '/qr-generator', label: 'QR Generator', icon: QrCode },
+            ],
+        },
+        {
+            title: 'Account Management',
+            items: [
+                { path: '/logs', label: 'Activity Logs', icon: Activity },
+                { path: '/admin/users', label: 'Manage Users', icon: Users },
+            ],
+        },
     ]
 
     const isActive = (path) => location.pathname === path
@@ -43,46 +56,57 @@ function Sidebar() {
             </button>
 
             <aside
-                className={`fixed left-0 top-0 h-screen w-64 bg-[#1a0f2e] border-r border-[#3d2e5c] text-gray-100 transition-transform duration-300 ease-in-out z-40 lg:translate-x-0 flex flex-col ${open ? 'translate-x-0' : '-translate-x-full'
+                className={`fixed left-0 top-0 h-screen w-64 bg-transparent text-gray-100 transition-transform duration-300 ease-in-out z-40 lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'
                     }`}
             >
-                <div className="p-6 border-b border-[#3d2e5c]">
-                    <div className="flex items-center gap-2 mb-2">
-                        <Zap className="text-lavender-500" size={28} />
-                        <h1 className="text-2xl font-bold text-white">
-                            Infini-Stock
-                        </h1>
+                <div className="m-3 h-[calc(100vh-1.5rem)] rounded-2xl border border-[#3d2e5c]/60 bg-gradient-to-b from-[#1a0f2e]/85 to-[#2d1f4d]/50 backdrop-blur-md shadow-lg shadow-black/30 overflow-hidden flex flex-col">
+                    <div className="p-6 border-b border-white/10">
+                        <div className="flex items-center gap-2 mb-2">
+                            <Zap className="text-lavender-500" size={28} />
+                            <h1 className="text-2xl font-bold text-white">
+                                Infini-Stock
+                            </h1>
+                        </div>
+                        <p className="text-sm text-gray-300/80">
+                            IoT Inventory System
+                        </p>
                     </div>
-                    <p className="text-sm text-gray-400">
-                        IoT Inventory System
-                    </p>
-                </div>
 
-                <nav className="flex-1 p-4 space-y-2">
-                    {menuItems.map(({ path, label, icon: Icon }) => (
-                        <Link
-                            key={path}
-                            to={path}
-                            onClick={() => setOpen(false)}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive(path)
-                                ? 'bg-lavender-600/20 text-lavender-400 border-l-4 border-lavender-600'
-                                : 'text-gray-400 hover:bg-[#2d2d2d] hover:text-lavender-300'
-                                }`}
+                    <nav className="flex-1 px-4 py-4 space-y-4">
+                        {menuGroups.map((group) => (
+                            <div key={group.title}>
+                                <p className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-gray-300/70">
+                                    {group.title}
+                                </p>
+                                <div className="space-y-2">
+                                    {group.items.map(({ path, label, icon: Icon }) => (
+                                        <Link
+                                            key={path}
+                                            to={path}
+                                            onClick={() => setOpen(false)}
+                                            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive(path)
+                                                ? 'bg-lavender-600/20 text-lavender-200 border-l-4 border-lavender-600'
+                                                : 'text-gray-300/70 hover:bg-white/5 hover:text-lavender-100'
+                                                }`}
+                                        >
+                                            <Icon size={20} />
+                                            <span className="font-medium">{label}</span>
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </nav>
+
+                    <div className="p-4 border-t border-white/10">
+                        <button
+                            onClick={handleLogout}
+                            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300/70 hover:bg-white/5 hover:text-lavender-100 transition-all text-sm font-medium"
                         >
-                            <Icon size={20} />
-                            <span className="font-medium">{label}</span>
-                        </Link>
-                    ))}
-                </nav>
-
-                <div className="p-4 border-t border-[#3d2e5c]">
-                    <button
-                        onClick={handleLogout}
-                        className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:text-lavender-300 transition-all text-sm font-medium"
-                    >
-                        <LogOut size={20} />
-                        Logout
-                    </button>
+                            <LogOut size={20} />
+                            Logout
+                        </button>
+                    </div>
                 </div>
             </aside>
 

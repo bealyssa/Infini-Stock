@@ -4,7 +4,11 @@ import { Button } from '../components/ui/Button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/Dialog'
 import { Input } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
+import { Badge } from '../components/ui/Badge'
 import { Card } from '../components/ui/Card'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table'
+import FullPageLoader from '../components/FullPageLoader'
+import TablePagination from '../components/TablePagination'
 import { adminApi } from '../api'
 
 function Users() {
@@ -66,6 +70,45 @@ function Users() {
         if (!/[0-9]/.test(password)) return 'Password must include a number'
         return ''
     }
+
+    const getInitials = (value) => {
+        const text = (value || '').trim()
+        if (!text) return '—'
+        const parts = text.split(/\s+/).filter(Boolean)
+        const first = parts[0]?.[0] || ''
+        const last = parts.length > 1 ? parts[parts.length - 1]?.[0] : ''
+        const initials = `${first}${last}`.toUpperCase()
+        return initials || text.slice(0, 2).toUpperCase()
+    }
+
+    const formatRole = (role) => {
+        const value = (role || '').trim()
+        if (!value) return '—'
+        return value.charAt(0).toUpperCase() + value.slice(1)
+    }
+
+    const getRoleVariant = (role) => {
+        const value = (role || '').toLowerCase()
+        if (value === 'admin') return 'destructive'
+        if (value === 'manager') return 'warning'
+        if (value === 'technician') return 'info'
+        if (value === 'staff') return 'secondary'
+        if (value === 'viewer') return 'outline'
+        return 'secondary'
+    }
+
+    const ITEMS_PER_PAGE = 10
+    const [currentPage, setCurrentPage] = useState(1)
+
+    useEffect(() => {
+        setCurrentPage(1)
+    }, [users.length])
+
+    const totalPages = Math.max(1, Math.ceil(users.length / ITEMS_PER_PAGE))
+    const pagedUsers = users.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE,
+    )
 
     const validateForm = (data) => {
         return {
@@ -251,6 +294,10 @@ function Users() {
         }
     }
 
+    if (loading) {
+        return <FullPageLoader title="Loading users..." />
+    }
+
     return (
         <div className="space-y-6 p-6">
             <div className="flex items-center justify-between">
@@ -293,102 +340,90 @@ function Users() {
                         <div className="text-gray-400">No users found</div>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead>
-                                <tr className="border-b border-[#3d2e5c] bg-[#2d1f4a]">
-                                    <th className="px-6 py-3 text-left text-sm font-semibold text-lavender-300">
-                                        Name
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-sm font-semibold text-lavender-300">
-                                        Email
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-sm font-semibold text-lavender-300">
-                                        Role
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-sm font-semibold text-lavender-300">
-                                        Status
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-sm font-semibold text-lavender-300">
-                                        Actions
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {users.map((user) => (
-                                    <tr
-                                        key={user.id}
-                                        className="border-b border-[#404040] hover:bg-[#262626] transition"
-                                    >
-                                        <td className="px-6 py-3 text-gray-100">
-                                            {user.full_name}
-                                        </td>
-                                        <td className="px-6 py-3 text-gray-300">
+                    <>
+                        <Table>
+                            <TableHeader>
+                                <TableRow className="hover:bg-transparent">
+                                    <TableHead className="px-6 py-3 text-left text-sm font-semibold text-lavender-200">Name</TableHead>
+                                    <TableHead className="px-6 py-3 text-left text-sm font-semibold text-lavender-200">Email</TableHead>
+                                    <TableHead className="px-6 py-3 text-left text-sm font-semibold text-lavender-200">Role</TableHead>
+                                    <TableHead className="px-6 py-3 text-left text-sm font-semibold text-lavender-200">Status</TableHead>
+                                    <TableHead className="px-6 py-3 text-left text-sm font-semibold text-lavender-200">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {pagedUsers.map((user) => (
+                                    <TableRow key={user.id}>
+                                        <TableCell className="px-6 py-3 text-gray-100">
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-9 w-9 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-xs font-semibold text-lavender-200">
+                                                    {getInitials(user.full_name)}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <div className="font-medium text-white truncate">{user.full_name}</div>
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="px-6 py-3 text-gray-300">
                                             {user.email}
-                                        </td>
-                                        <td className="px-6 py-3">
-                                            <span className="inline-block px-3 py-1 rounded-full text-sm font-medium bg-[#262626] text-gray-300">
-                                                {user.role}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-3">
+                                        </TableCell>
+                                        <TableCell className="px-6 py-3">
+                                            <Badge variant={getRoleVariant(user.role)}>
+                                                {formatRole(user.role)}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="px-6 py-3">
                                             <button
-                                                onClick={() =>
-                                                    handleToggleActive(
-                                                        user.id,
-                                                        user.is_active
-                                                    )
-                                                }
+                                                onClick={() => handleToggleActive(user.id, user.is_active)}
                                                 className="flex items-center gap-2 text-gray-300 hover:text-gray-100 transition"
                                             >
                                                 {user.is_active ? (
                                                     <>
-                                                        <ToggleRight
-                                                            size={20}
-                                                            className="text-green-500"
-                                                        />
-                                                        <span className="text-sm">
-                                                            Active
-                                                        </span>
+                                                        <ToggleRight size={20} className="text-green-500" />
+                                                        <span className="text-sm">Active</span>
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <ToggleLeft
-                                                            size={20}
-                                                            className="text-gray-500"
-                                                        />
-                                                        <span className="text-sm">
-                                                            Inactive
-                                                        </span>
+                                                        <ToggleLeft size={20} className="text-gray-500" />
+                                                        <span className="text-sm">Inactive</span>
                                                     </>
                                                 )}
                                             </button>
-                                        </td>
-                                        <td className="px-6 py-3 flex items-center gap-2">
-                                            <button
-                                                onClick={() =>
-                                                    handleOpenDialog(user)
-                                                }
-                                                className="p-2 rounded-lg hover:bg-[#262626] text-gray-400 hover:text-gray-200 transition"
-                                                title="Edit user"
-                                            >
-                                                <Edit2 size={18} />
-                                            </button>
-                                            <button
-                                                onClick={() =>
-                                                    handleDeleteUser(user.id)
-                                                }
-                                                className="p-2 rounded-lg hover:bg-red-900/20 text-gray-400 hover:text-red-400 transition"
-                                                title="Delete user"
-                                            >
-                                                <Trash2 size={18} />
-                                            </button>
-                                        </td>
-                                    </tr>
+                                        </TableCell>
+                                        <TableCell className="px-6 py-3">
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => handleOpenDialog(user)}
+                                                    className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-gray-200 transition"
+                                                    title="Edit user"
+                                                >
+                                                    <Edit2 size={18} />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteUser(user.id)}
+                                                    className="p-2 rounded-lg hover:bg-red-900/20 text-gray-400 hover:text-red-400 transition"
+                                                    title="Delete user"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
                                 ))}
-                            </tbody>
-                        </table>
-                    </div>
+                            </TableBody>
+                        </Table>
+
+                        {users.length > ITEMS_PER_PAGE ? (
+                            <div className="px-5 py-4 border-t border-white/10">
+                                <TablePagination
+                                    align="center"
+                                    currentPage={currentPage}
+                                    totalPages={totalPages}
+                                    onPageChange={setCurrentPage}
+                                />
+                            </div>
+                        ) : null}
+                    </>
                 )}
             </Card>
 

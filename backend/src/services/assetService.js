@@ -233,6 +233,60 @@ async function listActivityLogs({ limit = 100, userId, includeAll = false } = {}
     })
 }
 
+async function upsertAssetMeta({ qrCode, type, imageData, description, userId }) {
+    const assetRepo = AppDataSource.getRepository('Asset')
+
+    if (!qrCode) {
+        return { error: 'qrCode is required', statusCode: 400 }
+    }
+
+    const existing = await assetRepo.findOne({
+        where: { qr_code: qrCode },
+        relations: { parent: true, creator: true },
+    })
+
+    if (!existing) {
+        if (!type) {
+            return { error: 'type is required to create asset metadata', statusCode: 400 }
+        }
+
+        const created = await createAsset({
+            type,
+            qrCode,
+            location: 'Unassigned',
+            status: 'active',
+            parentQrCode: null,
+            imageData: imageData || null,
+            description: (description && String(description).trim()) || null,
+            userId,
+        })
+
+        if (created.error) return created
+        return { asset: created.asset }
+    }
+
+    existing.image_data = imageData || null
+    existing.description = (description && String(description).trim()) || null
+    await assetRepo.save(existing)
+
+    await createActivityLog({
+        asset: existing,
+        action: 'update',
+        old_location: existing.location,
+        new_location: existing.location,
+        old_status: existing.status,
+        new_status: existing.status,
+        user_id: userId,
+    })
+
+    const refreshed = await assetRepo.findOne({
+        where: { qr_code: qrCode },
+        relations: { parent: true, creator: true },
+    })
+
+    return { asset: refreshed }
+}
+
 module.exports = {
     createAsset,
     getAssetByQr,
@@ -241,4 +295,5 @@ module.exports = {
     updateAssetStatus,
     swapMonitor,
     listActivityLogs,
+    upsertAssetMeta,
 }
