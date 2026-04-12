@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react'
-import { Plus, Trash2, Edit2, ToggleLeft, ToggleRight } from 'lucide-react'
+import { Plus, Trash2, Edit2, ToggleLeft, ToggleRight, Trash } from 'lucide-react'
 import { Button } from '../components/ui/Button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/Dialog'
 import { Input } from '../components/ui/Input'
 import { Select } from '../components/ui/Select'
+import { Badge } from '../components/ui/Badge'
 import { Card } from '../components/ui/Card'
-import axios from 'axios'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table'
+import FullPageLoader from '../components/FullPageLoader'
+import TablePagination from '../components/TablePagination'
+import { adminApi } from '../api'
 
 function Users() {
     const [users, setUsers] = useState([])
@@ -16,6 +20,18 @@ function Users() {
     const [isEditMode, setIsEditMode] = useState(false)
     const [editingUserId, setEditingUserId] = useState(null)
 
+    const [touched, setTouched] = useState({
+        full_name: false,
+        email: false,
+        password: false,
+    })
+
+    const [formErrors, setFormErrors] = useState({
+        full_name: '',
+        email: '',
+        password: '',
+    })
+
     const ROLES = ['admin', 'manager', 'technician', 'staff', 'viewer']
 
     const [formData, setFormData] = useState({
@@ -25,6 +41,117 @@ function Users() {
         role: 'staff',
     })
 
+    const [selectedUsers, setSelectedUsers] = useState(new Set())
+
+    const validateEmail = (value) => {
+        if (isEditMode) return ''
+        const email = (value || '').trim()
+        if (!email) return 'Email is required'
+        const basicEmailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+        if (!basicEmailOk) return 'Enter a valid email address'
+        if (!email.toLowerCase().endsWith('@gmail.com')) {
+            return 'Email must be a @gmail.com address'
+        }
+        return ''
+    }
+
+    const validateFullName = (value) => {
+        const name = (value || '').trim()
+        if (!name) return 'Full name is required'
+        if (name.length < 3) return 'Full name is too short'
+        return ''
+    }
+
+    const validatePassword = (value) => {
+        const password = value || ''
+        if (isEditMode && !password) return ''
+        if (!password) return 'Password is required'
+        if (password.length < 8) return 'Password must be at least 8 characters'
+        if (!/[a-z]/.test(password)) return 'Password must include a lowercase letter'
+        if (!/[A-Z]/.test(password)) return 'Password must include an uppercase letter'
+        if (!/[0-9]/.test(password)) return 'Password must include a number'
+        return ''
+    }
+
+    const getInitials = (value) => {
+        const text = (value || '').trim()
+        if (!text) return '—'
+        const parts = text.split(/\s+/).filter(Boolean)
+        const first = parts[0]?.[0] || ''
+        const last = parts.length > 1 ? parts[parts.length - 1]?.[0] : ''
+        const initials = `${first}${last}`.toUpperCase()
+        return initials || text.slice(0, 2).toUpperCase()
+    }
+
+    const formatRole = (role) => {
+        const value = (role || '').trim()
+        if (!value) return '—'
+        return value.charAt(0).toUpperCase() + value.slice(1)
+    }
+
+    const getRoleVariant = (role) => {
+        const value = (role || '').toLowerCase()
+        if (value === 'admin') return 'destructive'
+        if (value === 'manager') return 'warning'
+        if (value === 'technician') return 'info'
+        if (value === 'staff') return 'secondary'
+        if (value === 'viewer') return 'outline'
+        return 'secondary'
+    }
+
+    const ITEMS_PER_PAGE = 10
+    const [currentPage, setCurrentPage] = useState(1)
+
+    useEffect(() => {
+        setCurrentPage(1)
+    }, [users.length])
+
+    const totalPages = Math.max(1, Math.ceil(users.length / ITEMS_PER_PAGE))
+    const pagedUsers = users.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE,
+    )
+
+    const toggleUserSelection = (userId) => {
+        const newSelected = new Set(selectedUsers)
+        if (newSelected.has(userId)) {
+            newSelected.delete(userId)
+        } else {
+            newSelected.add(userId)
+        }
+        setSelectedUsers(newSelected)
+    }
+
+    const toggleSelectAll = () => {
+        if (selectedUsers.size === pagedUsers.length) {
+            setSelectedUsers(new Set())
+        } else {
+            setSelectedUsers(new Set(pagedUsers.map(u => u._id)))
+        }
+    }
+
+    const handleBulkDelete = async () => {
+        if (selectedUsers.size === 0) return
+        if (!confirm(`Delete ${selectedUsers.size} user(s)? This cannot be undone.`)) return
+
+        try {
+            const idsToDelete = Array.from(selectedUsers)
+            await Promise.all(idsToDelete.map(id => adminApi.deleteUser(id)))
+            setUsers(prev => prev.filter(u => !idsToDelete.includes(u._id)))
+            setSelectedUsers(new Set())
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to delete users')
+        }
+    }
+
+    const validateForm = (data) => {
+        return {
+            full_name: validateFullName(data.full_name),
+            email: validateEmail(data.email),
+            password: validatePassword(data.password),
+        }
+    }
+
     // Fetch users on mount
     useEffect(() => {
         fetchUsers()
@@ -33,16 +160,11 @@ function Users() {
     const fetchUsers = async () => {
         try {
             setLoading(true)
-            const token = localStorage.getItem('authToken')
-            const response = await axios.get('http://localhost:5000/api/admin/users', {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            })
+            const response = await adminApi.listUsers()
             setUsers(response.data)
             setError('')
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to fetch users')
+            setError(err.response?.data?.message || err.message || 'Failed to fetch users')
             console.error('Fetch users error:', err)
         } finally {
             setLoading(false)
@@ -69,6 +191,17 @@ function Users() {
                 role: 'staff',
             })
         }
+
+        setTouched({
+            full_name: false,
+            email: false,
+            password: false,
+        })
+        setFormErrors({
+            full_name: '',
+            email: '',
+            password: '',
+        })
         setIsDialogOpen(true)
     }
 
@@ -80,13 +213,36 @@ function Users() {
             password: '',
             role: 'staff',
         })
+        setTouched({
+            full_name: false,
+            email: false,
+            password: false,
+        })
+        setFormErrors({
+            full_name: '',
+            email: '',
+            password: '',
+        })
     }
 
     const handleInputChange = (e) => {
         const { name, value } = e.target
-        setFormData((prev) => ({
+
+        setFormData((prev) => {
+            const next = {
+                ...prev,
+                [name]: value,
+            }
+
+            // realtime validation
+            const nextErrors = validateForm(next)
+            setFormErrors(nextErrors)
+            return next
+        })
+
+        setTouched((prev) => ({
             ...prev,
-            [name]: value,
+            [name]: true,
         }))
     }
 
@@ -95,20 +251,26 @@ function Users() {
         setError('')
         setSuccess('')
 
+        const nextErrors = validateForm(formData)
+        setFormErrors(nextErrors)
+        setTouched({
+            full_name: true,
+            email: true,
+            password: true,
+        })
+
+        const hasErrors = Object.values(nextErrors).some(Boolean)
+        if (hasErrors) {
+            setError('Please fix the highlighted fields')
+            return
+        }
+
         try {
             const token = localStorage.getItem('authToken')
 
             if (isEditMode) {
                 // Update user
-                const response = await axios.patch(
-                    `http://localhost:5000/api/admin/users/${editingUserId}`,
-                    formData,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                        },
-                    }
-                )
+                const response = await adminApi.updateUser(editingUserId, formData)
                 setSuccess('User updated successfully')
                 setUsers(
                     users.map((u) =>
@@ -117,23 +279,19 @@ function Users() {
                 )
             } else {
                 // Create new user
-                const response = await axios.post(
-                    'http://localhost:5000/api/admin/users',
-                    formData,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                        },
-                    }
+                const response = await adminApi.createUser(formData)
+                setSuccess(
+                    response.data?.verification_sent
+                        ? 'User created. Verification email sent (expires in 5 minutes).'
+                        : 'User created successfully'
                 )
-                setSuccess('User created successfully')
                 setUsers([...users, response.data])
             }
 
             handleCloseDialog()
             setTimeout(() => setSuccess(''), 3000)
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to save user')
+            setError(err.response?.data?.message || err.message || 'Failed to save user')
             console.error('Save user error:', err)
         }
     }
@@ -144,36 +302,19 @@ function Users() {
         }
 
         try {
-            const token = localStorage.getItem('authToken')
-            await axios.delete(
-                `http://localhost:5000/api/admin/users/${userId}`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            )
+            await adminApi.deleteUser(userId)
             setSuccess('User deleted successfully')
             setUsers(users.filter((u) => u.id !== userId))
             setTimeout(() => setSuccess(''), 3000)
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to delete user')
+            setError(err.response?.data?.message || err.message || 'Failed to delete user')
             console.error('Delete user error:', err)
         }
     }
 
     const handleToggleActive = async (userId, currentStatus) => {
         try {
-            const token = localStorage.getItem('authToken')
-            const response = await axios.patch(
-                `http://localhost:5000/api/admin/users/${userId}`,
-                { is_active: !currentStatus },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            )
+            const response = await adminApi.updateUser(userId, { is_active: !currentStatus })
             setUsers(
                 users.map((u) => (u.id === userId ? response.data : u))
             )
@@ -182,9 +323,13 @@ function Users() {
             )
             setTimeout(() => setSuccess(''), 2000)
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to update user')
+            setError(err.response?.data?.message || err.message || 'Failed to update user')
             console.error('Toggle active error:', err)
         }
+    }
+
+    if (loading) {
+        return <FullPageLoader title="Loading users..." />
     }
 
     return (
@@ -198,13 +343,25 @@ function Users() {
                         {users.length} total users
                     </p>
                 </div>
-                <Button
-                    onClick={() => handleOpenDialog()}
-                    className="flex items-center gap-2"
-                >
-                    <Plus size={20} />
-                    Add User
-                </Button>
+                <div className="flex gap-2">
+                    <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleBulkDelete}
+                        disabled={selectedUsers.size === 0}
+                        className="bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <Trash size={16} className="mr-2" />
+                        Delete {selectedUsers.size > 0 && `(${selectedUsers.size})`}
+                    </Button>
+                    <Button
+                        onClick={() => handleOpenDialog()}
+                        className="flex items-center gap-2"
+                    >
+                        <Plus size={20} />
+                        Add User
+                    </Button>
+                </div>
             </div>
 
             {error && (
@@ -229,104 +386,105 @@ function Users() {
                         <div className="text-gray-400">No users found</div>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead>
-                                <tr className="border-b border-[#3d2e5c] bg-[#2d1f4a]">
-                                    <th className="px-6 py-3 text-left text-sm font-semibold text-lavender-300">
-                                        Name
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-sm font-semibold text-lavender-300">
-                                        Email
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-sm font-semibold text-lavender-300">
-                                        Role
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-sm font-semibold text-lavender-300">
-                                        Status
-                                    </th>
-                                    <th className="px-6 py-3 text-left text-sm font-semibold text-lavender-300">
-                                        Actions
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {users.map((user) => (
-                                    <tr
-                                        key={user.id}
-                                        className="border-b border-[#404040] hover:bg-[#262626] transition"
+                    <>
+                        <Table>
+                            <TableHeader>
+                                <TableRow className="hover:bg-transparent">
+                                    <TableHead className="px-6 py-3 text-left text-sm font-semibold text-lavender-200 w-12">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedUsers.size === pagedUsers.length && pagedUsers.length > 0}
+                                            onChange={toggleSelectAll}
+                                            className="appearance-none w-4 h-4 border-2 border-[#3d2e5c] bg-[#0f0a1a] rounded cursor-pointer checked:bg-lavender-600 checked:border-lavender-600 checked:bg-[length:100%_100%] checked:[background-image:url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0id2hpdGUiPjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTE2LjcwNyA1LjI5M2ExIDEgMCAwIDEgMCAxLjQxNGwtOCA4YTEgMSAwIDAgMS0xLjQxNCAwbC00LTRhMSAxIDAgMCAxIDEuNDE0LTEuNDE0TDggMTIuNTg2bDcuMjkzLTcuMjkzYTEgMSAwIDAgMSAxLjQxNCAweiIgY2xpcC1ydWxlPSJldmVub2RkIi8+PC9zdmc+')] checked:bg-center checked:bg-no-repeat transition-colors"
+                                        />
+                                    </TableHead>
+                                    <TableHead className="px-6 py-3 text-left text-sm font-semibold text-lavender-200">Name</TableHead>
+                                    <TableHead className="px-6 py-3 text-left text-sm font-semibold text-lavender-200">Email</TableHead>
+                                    <TableHead className="px-6 py-3 text-left text-sm font-semibold text-lavender-200">Role</TableHead>
+                                    <TableHead className="px-6 py-3 text-left text-sm font-semibold text-lavender-200">Status</TableHead>
+                                    <TableHead className="px-6 py-3 text-left text-sm font-semibold text-lavender-200">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {pagedUsers.map((user) => (
+                                    <TableRow key={user._id}
+                                        onClick={() => openDetails(user)}
+                                        className="hover:bg-white/5 transition-colors cursor-pointer"
                                     >
-                                        <td className="px-6 py-3 text-gray-100">
-                                            {user.full_name}
-                                        </td>
-                                        <td className="px-6 py-3 text-gray-300">
+                                        <TableCell className="px-6 py-3" onClick={(e) => e.stopPropagation()}>
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedUsers.has(user._id)}
+                                                onChange={() => toggleUserSelection(user._id)}
+                                                className="appearance-none w-4 h-4 border-2 border-[#3d2e5c] bg-[#0f0a1a] rounded cursor-pointer checked:bg-lavender-600 checked:border-lavender-600 checked:bg-[length:100%_100%] checked:[background-image:url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0id2hpdGUiPjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTE2LjcwNyA1LjI5M2ExIDEgMCAwIDEgMCAxLjQxNGwtOCA4YTEgMSAwIDAgMS0xLjQxNCAwbC00LTRhMSAxIDAgMCAxIDEuNDE0LTEuNDE0TDggMTIuNTg2bDcuMjkzLTcuMjkzYTEgMSAwIDAgMSAxLjQxNCAweiIgY2xpcC1ydWxlPSJldmVub2RkIi8+PC9zdmc+')] checked:bg-center checked:bg-no-repeat transition-colors"
+                                            />
+                                        </TableCell>
+                                        <TableCell className="px-6 py-3 text-gray-100">
+                                            <div className="font-medium text-white">{user.full_name}</div>
+                                        </TableCell>
+                                        <TableCell className="px-6 py-3 text-gray-300">
                                             {user.email}
-                                        </td>
-                                        <td className="px-6 py-3">
-                                            <span className="inline-block px-3 py-1 rounded-full text-sm font-medium bg-[#262626] text-gray-300">
-                                                {user.role}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-3">
+                                        </TableCell>
+                                        <TableCell className="px-6 py-3">
+                                            <Badge variant={getRoleVariant(user.role)}>
+                                                {formatRole(user.role)}
+                                            </Badge>
+                                        </TableCell>
+                                        <TableCell className="px-6 py-3">
                                             <button
-                                                onClick={() =>
-                                                    handleToggleActive(
-                                                        user.id,
-                                                        user.is_active
-                                                    )
-                                                }
+                                                onClick={() => handleToggleActive(user.id, user.is_active)}
                                                 className="flex items-center gap-2 text-gray-300 hover:text-gray-100 transition"
                                             >
                                                 {user.is_active ? (
                                                     <>
-                                                        <ToggleRight
-                                                            size={20}
-                                                            className="text-green-500"
-                                                        />
-                                                        <span className="text-sm">
-                                                            Active
-                                                        </span>
+                                                        <ToggleRight size={20} className="text-green-500" />
+                                                        <span className="text-sm">Active</span>
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <ToggleLeft
-                                                            size={20}
-                                                            className="text-gray-500"
-                                                        />
-                                                        <span className="text-sm">
-                                                            Inactive
-                                                        </span>
+                                                        <ToggleLeft size={20} className="text-gray-500" />
+                                                        <span className="text-sm">Inactive</span>
                                                     </>
                                                 )}
                                             </button>
-                                        </td>
-                                        <td className="px-6 py-3 flex items-center gap-2">
-                                            <button
-                                                onClick={() =>
-                                                    handleOpenDialog(user)
-                                                }
-                                                className="p-2 rounded-lg hover:bg-[#262626] text-gray-400 hover:text-gray-200 transition"
-                                                title="Edit user"
-                                            >
-                                                <Edit2 size={18} />
-                                            </button>
-                                            <button
-                                                onClick={() =>
-                                                    handleDeleteUser(user.id)
-                                                }
-                                                className="p-2 rounded-lg hover:bg-red-900/20 text-gray-400 hover:text-red-400 transition"
-                                                title="Delete user"
-                                            >
-                                                <Trash2 size={18} />
-                                            </button>
-                                        </td>
-                                    </tr>
+                                        </TableCell>
+                                        <TableCell className="px-6 py-3">
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => handleOpenDialog(user)}
+                                                    className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-gray-200 transition"
+                                                    title="Edit user"
+                                                >
+                                                    <Edit2 size={18} />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteUser(user.id)}
+                                                    className="p-2 rounded-lg hover:bg-red-900/20 text-gray-400 hover:text-red-400 transition"
+                                                    title="Delete user"
+                                                >
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
                                 ))}
-                            </tbody>
-                        </table>
-                    </div>
+                            </TableBody>
+                        </Table>
+
+                    </>
                 )}
             </Card>
+
+            <div className="mt-6">
+                <div className="px-5 py-4">
+                    <TablePagination
+                        align="end"
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                    />
+                </div>
+            </div>
 
             {/* Add/Edit User Dialog */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -336,9 +494,9 @@ function Users() {
                             {isEditMode ? 'Edit User' : 'Add New User'}
                         </DialogTitle>
                     </DialogHeader>
-                    <form onSubmit={handleSubmit} className="space-y-4">
+                    <form onSubmit={handleSubmit} className="space-y-2">
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">
+                            <label className="block text-sm font-medium text-gray-300 mb-1">
                                 Full Name
                             </label>
                             <Input
@@ -349,10 +507,13 @@ function Users() {
                                 placeholder="John Doe"
                                 required
                             />
+                            {touched.full_name && formErrors.full_name ? (
+                                <p className="mt-1 text-sm text-red-400">{formErrors.full_name}</p>
+                            ) : null}
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">
+                            <label className="block text-sm font-medium text-gray-300 mb-1">
                                 Email
                             </label>
                             <Input
@@ -360,14 +521,20 @@ function Users() {
                                 name="email"
                                 value={formData.email}
                                 onChange={handleInputChange}
-                                placeholder="john@example.com"
+                                placeholder="name@gmail.com"
                                 required
                                 disabled={isEditMode}
                             />
+                            {!isEditMode ? (
+                                <p className="mt-1 text-xs text-gray-500">Only @gmail.com emails are allowed.</p>
+                            ) : null}
+                            {touched.email && formErrors.email ? (
+                                <p className="mt-1 text-sm text-red-400">{formErrors.email}</p>
+                            ) : null}
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">
+                            <label className="block text-sm font-medium text-gray-300 mb-1">
                                 {isEditMode ? 'Password (leave blank to keep current)' : 'Password'}
                             </label>
                             <Input
@@ -378,10 +545,17 @@ function Users() {
                                 placeholder="••••••••"
                                 required={!isEditMode}
                             />
+                            {touched.password && formErrors.password ? (
+                                <p className="mt-1 text-sm text-red-400">{formErrors.password}</p>
+                            ) : (
+                                <p className="mt-1 text-xs text-gray-500">
+                                    8+ chars, upper/lowercase, number
+                                </p>
+                            )}
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">
+                            <label className="block text-sm font-medium text-gray-300 mb-1">
                                 Role
                             </label>
                             <Select
@@ -406,6 +580,7 @@ function Users() {
                             <Button
                                 type="submit"
                                 className="flex-1"
+                                disabled={Object.values(formErrors).some(Boolean)}
                             >
                                 {isEditMode ? 'Update User' : 'Create User'}
                             </Button>

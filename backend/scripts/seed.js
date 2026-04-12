@@ -155,6 +155,10 @@ const seedUnits = [
         location: 'Head Office NOC',
         description: 'Primary control unit used by the operations team.',
         created_by: '550e8400-e29b-41d4-a716-446655440001',
+        model_type: 'Dell OptiPlex 7090',
+        serial_number: 'DELL-OP7090-001-HQ',
+        condition: 'good',
+        notes: 'Recently maintained. All systems operational. Last service 2024-11-15.',
     },
     {
         id: '770e8400-e29b-41d4-a716-446655440002',
@@ -164,6 +168,10 @@ const seedUnits = [
         location: 'Head Office IT Support',
         description: 'Support desk unit scheduled for panel replacement.',
         created_by: '550e8400-e29b-41d4-a716-446655440002',
+        model_type: 'HP Elitedesk 800 G6',
+        serial_number: 'HP-ED800G6-002-IT',
+        condition: 'fair',
+        notes: 'Power supply showing signs of wear. Scheduled for replacement Q1 2025.',
     },
     {
         id: '770e8400-e29b-41d4-a716-446655440003',
@@ -173,6 +181,10 @@ const seedUnits = [
         location: 'Warehouse A Receiving',
         description: 'Receiving bay unit used for intake verification.',
         created_by: '550e8400-e29b-41d4-a716-446655440004',
+        model_type: 'Lenovo ThinkCentre M90',
+        serial_number: 'LEN-TCM90-003-WH',
+        condition: 'good',
+        notes: 'GPU upgraded in 2024. Running smoothly. Next service due 2025-06.',
     },
 ]
 
@@ -185,6 +197,10 @@ const seedMonitors = [
         description: 'Main display for live status dashboards.',
         created_by: '550e8400-e29b-41d4-a716-446655440001',
         linked_unit_id: '770e8400-e29b-41d4-a716-446655440001',
+        model_type: 'Dell U2723DE 27in',
+        serial_number: 'DELL-U2723DE-001',
+        condition: 'good',
+        notes: 'Primary dashboard display. Color calibrated monthly. HDMI and DP working.',
     },
     {
         id: '880e8400-e29b-41d4-a716-446655440002',
@@ -194,6 +210,10 @@ const seedMonitors = [
         description: 'Backup display for operations floor failover.',
         created_by: '550e8400-e29b-41d4-a716-446655440002',
         linked_unit_id: '770e8400-e29b-41d4-a716-446655440001',
+        model_type: 'Dell U2720Q 27in',
+        serial_number: 'DELL-U2720Q-002',
+        condition: 'good',
+        notes: 'Backup failover monitor. Tested weekly. Ready for immediate deployment.',
     },
     {
         id: '880e8400-e29b-41d4-a716-446655440003',
@@ -203,6 +223,10 @@ const seedMonitors = [
         description: 'Help desk display awaiting replacement panel.',
         created_by: '550e8400-e29b-41d4-a716-446655440005',
         linked_unit_id: '770e8400-e29b-41d4-a716-446655440002',
+        model_type: 'BenQ EW2880U 28in',
+        serial_number: 'BENQ-EW2880-003',
+        condition: 'poor',
+        notes: 'LCD panel flickering intermittently. Replacement panel ordered. ETA: 2025-01-20.',
     },
     {
         id: '880e8400-e29b-41d4-a716-446655440004',
@@ -212,6 +236,10 @@ const seedMonitors = [
         description: 'Logistics display mounted at the receiving bay.',
         created_by: '550e8400-e29b-41d4-a716-446655440004',
         linked_unit_id: '770e8400-e29b-41d4-a716-446655440003',
+        model_type: 'LG 24UP550 24in',
+        serial_number: 'LG-24UP550-004',
+        condition: 'good',
+        notes: 'Recently installed. USB-C connectivity working. Brightness sensor active.',
     },
 ]
 
@@ -224,6 +252,10 @@ const seedAssets = [
         location: 'Head Office NOC',
         created_by: '550e8400-e29b-41d4-a716-446655440001',
         parent_id: null,
+        model_type: 'Dell OptiPlex 7090',
+        serial_number: 'DELL-OP7090-001-HQ',
+        condition: 'good',
+        notes: 'Primary NOC control system. All components verified.',
     },
     {
         id: '990e8400-e29b-41d4-a716-446655440002',
@@ -233,6 +265,10 @@ const seedAssets = [
         location: 'Head Office IT Support',
         created_by: '550e8400-e29b-41d4-a716-446655440002',
         parent_id: null,
+        model_type: 'HP Elitedesk 800 G6',
+        serial_number: 'HP-ED800G6-002-IT',
+        condition: 'fair',
+        notes: 'Help desk support unit. Minor thermal issues detected.',
     },
     {
         id: '990e8400-e29b-41d4-a716-446655440003',
@@ -242,6 +278,10 @@ const seedAssets = [
         location: 'Warehouse A Receiving',
         created_by: '550e8400-e29b-41d4-a716-446655440004',
         parent_id: null,
+        model_type: 'Lenovo ThinkCentre M90',
+        serial_number: 'LEN-TCM90-003-WH',
+        condition: 'good',
+        notes: 'Warehouse receiving verification system. Fully operational.',
     },
     {
         id: '990e8400-e29b-41d4-a716-446655440004',
@@ -251,6 +291,10 @@ const seedAssets = [
         location: 'Head Office NOC',
         created_by: '550e8400-e29b-41d4-a716-446655440005',
         parent_id: '990e8400-e29b-41d4-a716-446655440001',
+        model_type: 'Dell U2723DE 27in',
+        serial_number: 'DELL-U2723DE-001',
+        condition: 'good',
+        notes: 'Primary display. Connected via DP. Color accurate.',
     },
     {
         id: '990e8400-e29b-41d4-a716-446655440005',
@@ -260,6 +304,10 @@ const seedAssets = [
         location: 'Head Office IT Support',
         created_by: '550e8400-e29b-41d4-a716-446655440004',
         parent_id: '990e8400-e29b-41d4-a716-446655440002',
+        model_type: 'BenQ EW2880U 28in',
+        serial_number: 'BENQ-EW2880-003',
+        condition: 'poor',
+        notes: 'Panel repair in progress. Expected back in service by 2025-01-20.',
     },
     {
         id: '990e8400-e29b-41d4-a716-446655440006',
@@ -269,6 +317,10 @@ const seedAssets = [
         location: 'Warehouse A Receiving',
         created_by: '550e8400-e29b-41d4-a716-446655440002',
         parent_id: '990e8400-e29b-41d4-a716-446655440003',
+        model_type: 'LG 24UP550 24in',
+        serial_number: 'LG-24UP550-004',
+        condition: 'good',
+        notes: 'Recently installed. All sensors and connectivity working.',
     },
 ]
 

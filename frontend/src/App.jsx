@@ -9,6 +9,7 @@ import QRGenerator from './pages/QRGenerator'
 import ActivityLogs from './pages/ActivityLogs'
 import Users from './pages/Users'
 import Login from './pages/Login'
+import ScanQrFab from './components/ScanQrFab'
 import './index.css'
 
 function App() {
@@ -39,7 +40,7 @@ function App() {
 
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-[#171717]">
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#050814] via-[#070A1C] to-[#0A0F2A]">
                 <div className="text-white">Loading...</div>
             </div>
         )
@@ -61,44 +62,28 @@ function App() {
                     path="/*"
                     element={
                         isAuthenticated ? (
-                            <div className="flex min-h-screen bg-[#171717]">
+                            <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#050814] via-[#070A1C] to-[#0A0F2A]">
+                                <div className="pointer-events-none absolute inset-0">
+                                    <div className="absolute -top-32 left-1/2 h-[520px] w-[820px] -translate-x-1/2 rounded-full bg-lavender-600/10 blur-3xl" />
+                                    <div className="absolute bottom-[-220px] right-[-220px] h-[520px] w-[520px] rounded-full bg-lavender-500/10 blur-3xl" />
+                                </div>
+
                                 <Sidebar />
-                                <div className="flex-1 flex flex-col">
+
+                                <div className="relative z-10 md:ml-64 flex flex-col min-h-screen">
                                     <Header />
-                                    <main className="flex-1 overflow-auto pt-16">
+                                    <main className="flex-1 overflow-auto pt-[75px]">
                                         <Routes>
                                             <Route path="/" element={<Dashboard />} />
-                                            <Route
-                                                path="/units"
-                                                element={<SystemUnits />}
-                                            />
-                                            <Route
-                                                path="/monitors"
-                                                element={<Monitors />}
-                                            />
-                                            <Route
-                                                path="/qr-generator"
-                                                element={<QRGenerator />}
-                                            />
-                                            <Route
-                                                path="/logs"
-                                                element={<ActivityLogs />}
-                                            />
-                                            <Route
-                                                path="/admin/users"
-                                                element={<Users />}
-                                            />
-                                            <Route
-                                                path="*"
-                                                element={
-                                                    <Navigate
-                                                        to="/"
-                                                        replace
-                                                    />
-                                                }
-                                            />
+                                            <Route path="/units" element={<SystemUnits />} />
+                                            <Route path="/monitors" element={<Monitors />} />
+                                            <Route path="/qr-generator" element={<QRGenerator />} />
+                                            <Route path="/logs" element={<ActivityLogs />} />
+                                            <Route path="/admin/users" element={<Users />} />
+                                            <Route path="*" element={<Navigate to="/" replace />} />
                                         </Routes>
                                     </main>
+                                    <ScanQrFab />
                                 </div>
                             </div>
                         ) : (

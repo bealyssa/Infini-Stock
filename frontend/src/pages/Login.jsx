@@ -59,15 +59,20 @@ function Login() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-[#171717] relative overflow-hidden">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#050814] via-[#070A1C] to-[#0A0F2A] relative overflow-hidden">
+            <div className="pointer-events-none absolute inset-0">
+                <div className="absolute -top-32 left-1/2 h-[520px] w-[820px] -translate-x-1/2 rounded-full bg-lavender-600/10 blur-3xl" />
+                <div className="absolute bottom-[-220px] right-[-220px] h-[520px] w-[520px] rounded-full bg-lavender-500/10 blur-3xl" />
+            </div>
+
             {/* ShapeGrid Background */}
-            <div className="absolute inset-0 z-0">
+            <div className="absolute inset-0 z-0 opacity-40">
                 <ShapeGrid
                     speed={0.5}
                     squareSize={40}
                     direction="diagonal"
-                    borderColor="#404040"
-                    hoverFillColor="#262626"
+                    borderColor="#ffffff14"
+                    hoverFillColor="#ffffff0a"
                     shape="square"
                     hoverTrailAmount={0}
                 />
@@ -75,7 +80,7 @@ function Login() {
 
             {/* Login Card */}
             <div className="relative z-10 w-full max-w-md px-6">
-                <div className="rounded-lg border border-[#404040] bg-[#171717]/95 backdrop-blur-sm p-8 shadow-2xl">
+                <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl p-8 shadow-2xl shadow-black/40">
                     {/* Header */}
                     <div className="text-center mb-8">
                         <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-white mb-4">

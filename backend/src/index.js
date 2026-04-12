@@ -12,6 +12,7 @@ const unitRoutes = require('./routes/units')
 const monitorRoutes = require('./routes/monitors')
 
 const app = express()
+let server = null
 
 const allowedOrigins = [
     'http://localhost:5173',
@@ -22,24 +23,61 @@ const allowedOrigins = [
     'http://192.168.1.2:5000',
 ]
 
-app.use(
-    cors({
-        origin: (origin, callback) => {
-            // Allow requests with no origin (like mobile apps or curl requests)
-            if (!origin) {
-                return callback(null, true);
-            }
+function isOriginAllowed(origin) {
+    if (!origin) return true
+    return allowedOrigins.includes(origin) || origin.startsWith('http://localhost:')
+}
 
-            // Check if origin is in allowlist or starts with localhost
-            if (allowedOrigins.includes(origin) || origin.startsWith('http://localhost:')) {
-                callback(null, true);
-            } else {
-                callback(new Error('Not allowed by CORS'));
-            }
-        },
-        credentials: true,
-    }),
-)
+const corsOptions = {
+    origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) {
+            return callback(null, true)
+        }
+
+        // Check if origin is in allowlist or starts with localhost
+        if (isOriginAllowed(origin)) {
+            callback(null, true)
+        } else {
+            callback(new Error('Not allowed by CORS'))
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+    maxAge: 0,
+    optionsSuccessStatus: 204,
+}
+
+// Explicit preflight handling to avoid inconsistent browser errors.
+app.options('*', (req, res) => {
+    const origin = req.headers.origin
+    if (!isOriginAllowed(origin)) {
+        return res.status(403).end()
+    }
+
+    if (origin) {
+        res.header('Access-Control-Allow-Origin', origin)
+        res.header('Vary', 'Origin')
+    }
+    res.header('Access-Control-Allow-Credentials', 'true')
+    res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS')
+    res.header(
+        'Access-Control-Allow-Headers',
+        req.headers['access-control-request-headers'] || 'Content-Type,Authorization',
+    )
+    res.header('Access-Control-Max-Age', '0')
+    return res.sendStatus(204)
+})
+
+app.use(cors(corsOptions))
+
+// Extra safety: ensure method list is always present (some browsers show
+// confusing errors if any middleware short-circuits before CORS runs).
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS')
+    next()
+})
 app.use(express.json())
 
 app.get('/', (req, res) => {
@@ -68,8 +106,47 @@ AppDataSource.initialize()
             `Schema synchronized for ${AppDataSource.entityMetadatas.length} entities`,
         )
 
-        app.listen(port, '0.0.0.0', () => {
+        server = app.listen(port, '0.0.0.0', () => {
             console.log(`Server running at http://0.0.0.0:${port}`)
+        })
+
+        const shutdown = async (exitCode = 0, nextSignal) => {
+            try {
+                if (server) {
+                    await new Promise((resolve) => {
+                        server.close(() => resolve())
+                    })
+                }
+            } catch {
+                // ignore
+            }
+
+            try {
+                if (AppDataSource.isInitialized) {
+                    await AppDataSource.destroy()
+                }
+            } catch {
+                // ignore
+            }
+
+            if (nextSignal) {
+                process.kill(process.pid, nextSignal)
+                return
+            }
+
+            process.exit(exitCode)
+        }
+
+        process.once('SIGUSR2', () => {
+            shutdown(0, 'SIGUSR2')
+        })
+
+        process.once('SIGINT', () => {
+            shutdown(0)
+        })
+
+        process.once('SIGTERM', () => {
+            shutdown(0)
         })
     })
     .catch((err) => {

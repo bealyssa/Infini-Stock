@@ -36,6 +36,19 @@ module.exports = new EntitySchema({
             nullable: false,
             default: true,
         },
+        email_verification_token_hash: {
+            type: 'varchar',
+            length: 64,
+            nullable: true,
+        },
+        email_verification_expires_at: {
+            type: 'timestamp',
+            nullable: true,
+        },
+        email_verified_at: {
+            type: 'timestamp',
+            nullable: true,
+        },
         created_at: {
             type: 'timestamp',
             createDate: true,

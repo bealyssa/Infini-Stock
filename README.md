@@ -50,6 +50,12 @@ Infini-Stock/
    - Copy `.env.example` to `.env` (already done with Supabase credentials)
    - Verify DB_HOST, DB_USER, DB_PASSWORD, DB_NAME are set
 
+   **Email verification (admin-created accounts):**
+   - Set `MAIL_USER` to a Gmail address (e.g. `yourapp@gmail.com`)
+   - Set `MAIL_PASS` to a Gmail App Password (not your normal password)
+   - Optional: `MAIL_FROM` (defaults to `MAIL_USER`)
+   - Optional: `BACKEND_PUBLIC_URL` (used to build the verification link, e.g. `http://192.168.1.20:5000`)
+
 3. **Start backend server**
    ```bash
    npm run dev      # Development mode with nodemon

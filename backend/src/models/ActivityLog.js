@@ -32,9 +32,25 @@ module.exports = new EntitySchema({
             length: 20,
             nullable: true,
         },
+        description: {
+            type: 'text',
+            nullable: true,
+        },
         user_id: {
             type: 'uuid',
             nullable: false,
+        },
+        asset_id: {
+            type: 'uuid',
+            nullable: true,
+        },
+        monitor_id: {
+            type: 'uuid',
+            nullable: true,
+        },
+        unit_id: {
+            type: 'uuid',
+            nullable: true,
         },
         timestamp: {
             type: 'timestamp',
@@ -47,7 +63,21 @@ module.exports = new EntitySchema({
             type: 'many-to-one',
             target: 'Asset',
             joinColumn: { name: 'asset_id' },
-            nullable: false,
+            nullable: true,
+            onDelete: 'CASCADE',
+        },
+        monitor: {
+            type: 'many-to-one',
+            target: 'Monitor',
+            joinColumn: { name: 'monitor_id' },
+            nullable: true,
+            onDelete: 'CASCADE',
+        },
+        unit: {
+            type: 'many-to-one',
+            target: 'Unit',
+            joinColumn: { name: 'unit_id' },
+            nullable: true,
             onDelete: 'CASCADE',
         },
         user: {

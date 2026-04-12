@@ -1,6 +1,27 @@
 const { AppDataSource } = require('../config/dataSource')
 const Profile = require('../models/Profile')
 const { hashPassword } = require('../utils/password')
+const crypto = require('crypto')
+const { sendVerificationEmail } = require('../utils/mailer')
+
+function isValidEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+}
+
+function isGmailAddress(email) {
+    return typeof email === 'string' && email.toLowerCase().endsWith('@gmail.com')
+}
+
+function sha256Hex(value) {
+    return crypto.createHash('sha256').update(value).digest('hex')
+}
+
+function getPublicBaseUrl(req) {
+    return (
+        process.env.BACKEND_PUBLIC_URL ||
+        `${req.protocol}://${req.get('host')}`
+    )
+}
 
 /**
  * Get all users
@@ -47,6 +68,17 @@ async function createUser(req, res) {
             })
         }
 
+        if (!isValidEmail(email)) {
+            return res.status(400).json({ message: 'Invalid email format' })
+        }
+
+        // Requirement: only allow @gmail.com for admin-created accounts
+        if (!isGmailAddress(email)) {
+            return res
+                .status(400)
+                .json({ message: 'Email must be a @gmail.com address' })
+        }
+
         const profileRepo = AppDataSource.getRepository(Profile)
 
         // Check if user already exists
@@ -58,16 +90,44 @@ async function createUser(req, res) {
         // Hash password
         const password_hash = await hashPassword(password)
 
+        // Generate verification token (5 minutes)
+        const verificationToken = crypto.randomBytes(32).toString('hex')
+        const email_verification_token_hash = sha256Hex(verificationToken)
+        const email_verification_expires_at = new Date(Date.now() + 5 * 60 * 1000)
+
         // Create new user
         const profile = profileRepo.create({
             full_name,
             email,
             password_hash,
             role: role || 'staff',
-            is_active: true,
+            is_active: false,
+            email_verification_token_hash,
+            email_verification_expires_at,
+            email_verified_at: null,
         })
 
         const saved = await profileRepo.save(profile)
+
+        const publicBaseUrl = getPublicBaseUrl(req)
+        const verifyUrl = `${publicBaseUrl}/api/auth/verify-email?email=${encodeURIComponent(
+            saved.email,
+        )}&token=${encodeURIComponent(verificationToken)}`
+
+        try {
+            await sendVerificationEmail({
+                to: saved.email,
+                fullName: saved.full_name,
+                verifyUrl,
+            })
+        } catch (mailError) {
+            // If email fails, roll back the user creation to avoid inactive orphan accounts.
+            await profileRepo.remove(saved)
+            console.error('Send verification email error:', mailError)
+            return res.status(500).json({
+                message: 'Failed to send verification email. User was not created.',
+            })
+        }
 
         return res.status(201).json({
             id: saved.id,
@@ -76,6 +136,7 @@ async function createUser(req, res) {
             role: saved.role,
             is_active: saved.is_active,
             created_at: saved.created_at,
+            verification_sent: true,
         })
     } catch (error) {
         console.error('Create user error:', error)
