@@ -6,6 +6,7 @@ import {
     PieChart as PieChartIcon,
     TrendingUp,
     Zap,
+    RefreshCw,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import {
@@ -27,6 +28,7 @@ import { activityApi, assetApi } from '../api'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
+import { ChangeDetailsModal } from '../components/ActionModals'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table'
 import FullPageLoader from '../components/FullPageLoader'
 import TablePagination from '../components/TablePagination'
@@ -87,9 +89,10 @@ function Dashboard() {
     const [logs, setLogs] = useState([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
-
-    const [dateFrom, setDateFrom] = useState('')
-    const [dateTo, setDateTo] = useState('')
+    const [lastUpdated, setLastUpdated] = useState(new Date())
+    const [refreshing, setRefreshing] = useState(false)
+    const [selectedChangeLog, setSelectedChangeLog] = useState(null)
+    const [changeDetailsOpen, setChangeDetailsOpen] = useState(false)
 
     useEffect(() => {
         const fetchData = async () => {
@@ -102,58 +105,68 @@ function Dashboard() {
                 setAssets(assetResponse.data)
                 setLogs(logResponse.data)
                 setError(null)
+                setLastUpdated(new Date())
             } catch (err) {
                 setError(err.response?.data?.message || err.message)
             } finally {
                 setLoading(false)
+                setRefreshing(false)
             }
         }
         fetchData()
     }, [])
 
-    useEffect(() => {
-        if (!logs?.length) return
-        // Default to last 14 days ending today.
-        const end = new Date()
-        end.setHours(0, 0, 0, 0)
-        const start = new Date(end)
-        start.setDate(start.getDate() - 13)
+    const handleRefresh = async () => {
+        setRefreshing(true)
+        try {
+            const [assetResponse, logResponse] = await Promise.all([
+                assetApi.listAssets(),
+                activityApi.listLogs(250),
+            ])
 
-        setDateFrom((v) => v || toInputDateValue(start))
-        setDateTo((v) => v || toInputDateValue(end))
+            setAssets(assetResponse.data)
+            setLogs(logResponse.data)
+            setError(null)
+            setLastUpdated(new Date())
+        } catch (err) {
+            setError(err.response?.data?.message || err.message)
+        } finally {
+            setRefreshing(false)
+        }
+    }
+
+    const formatLastUpdated = () => {
+        const now = new Date()
+        const diff = now - lastUpdated
+        const seconds = Math.floor(diff / 1000)
+        const minutes = Math.floor(seconds / 60)
+        const hours = Math.floor(minutes / 60)
+
+        let result = ''
+        if (seconds < 60) result = 'Just Now'
+        else if (minutes < 60) result = `${minutes}M Ago`
+        else if (hours < 24) result = `${hours}H Ago`
+        else result = lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+
+        return result
+    }
+
+    const LOG_PAGE_SIZE = 5
+    const [logPage, setLogPage] = useState(0)
+
+    const filteredLogs = useMemo(() => {
+        return logs || []
     }, [logs])
+
+    useEffect(() => {
+        setLogPage(0)
+    }, [filteredLogs])
 
     const totalAssets = assets.length
     const activeAssets = assets.filter((asset) => asset.status === 'active').length
     const brokenAssets = assets.filter((asset) =>
         ['broken', 'repair'].includes(asset.status),
     ).length
-
-    const LOG_PAGE_SIZE = 5
-    const [logPage, setLogPage] = useState(0)
-
-    const filteredLogs = useMemo(() => {
-        if (!logs?.length) return []
-        const from = parseInputDate(dateFrom)
-        const to = parseInputDate(dateTo)
-
-        // If dates are invalid/unset, return all logs.
-        if (!from || !to) return logs
-
-        const end = new Date(to)
-        end.setHours(23, 59, 59, 999)
-
-        return logs.filter((log) => {
-            if (!log?.timestamp) return false
-            const ts = new Date(log.timestamp)
-            if (Number.isNaN(ts.getTime())) return false
-            return ts >= from && ts <= end
-        })
-    }, [logs, dateFrom, dateTo])
-
-    useEffect(() => {
-        setLogPage(0)
-    }, [filteredLogs])
 
     const totalLogPages = useMemo(() => {
         const pages = Math.ceil((filteredLogs?.length || 0) / LOG_PAGE_SIZE)
@@ -210,27 +223,18 @@ function Dashboard() {
         const today = new Date()
         today.setHours(0, 0, 0, 0)
 
-        const from = parseInputDate(dateFrom)
-        const to = parseInputDate(dateTo)
-
-        const end = to || today
-        const start = from
-            ? from
-            : (() => {
-                const s = new Date(end)
-                s.setDate(s.getDate() - (fallbackDays - 1))
-                return s
-            })()
+        const end = today
+        const start = new Date(end)
+        start.setDate(start.getDate() - (fallbackDays - 1))
 
         const msPerDay = 24 * 60 * 60 * 1000
         const spanDays = Math.max(1, Math.floor((end - start) / msPerDay) + 1)
-        // Cap at 31 days for readability.
         const days = Math.min(spanDays, 31)
         const cappedStart = new Date(end)
         cappedStart.setDate(end.getDate() - (days - 1))
 
         const counts = new Map()
-        for (const log of filteredLogs) {
+        for (const log of logs) {
             if (!log?.timestamp) continue
             const ts = new Date(log.timestamp)
             if (Number.isNaN(ts.getTime())) continue
@@ -256,7 +260,7 @@ function Dashboard() {
         }
 
         return series
-    }, [filteredLogs, dateFrom, dateTo])
+    }, [logs])
 
     const stats = [
         {
@@ -295,78 +299,69 @@ function Dashboard() {
     return (
         <div className="content-full">
             <div className="content-centered py-8">
-                {/* Page title */}
-                <div className="mb-5">
-                    <h1 className="text-4xl font-bold  text-white">Dashboard</h1>
-                    <p className="mt-1 text-lg text-gray-400">Overview and recent system activity</p>
-                </div>
-
-                {/* Date filter (for logs/charts) */}
-                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                    <div className="flex items-center gap-2 text-sm font-semibold text-gray-200">
-                        <Activity className="text-lavender-400" size={16} />
-                        <span>Logs Date Range</span>
-                    </div>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-400 mb-2">From</label>
-                            <input
-                                type="date"
-                                value={dateFrom}
-                                onChange={(e) => setDateFrom(e.target.value)}
-                                className="flex h-10 w-full rounded-md border border-white/10 bg-black/20 px-3 py-2 text-sm text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lavender-600/50 focus-visible:border-white/20"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-semibold text-gray-400 mb-2">To</label>
-                            <input
-                                type="date"
-                                value={dateTo}
-                                onChange={(e) => setDateTo(e.target.value)}
-                                className="flex h-10 w-full rounded-md border border-white/10 bg-black/20 px-3 py-2 text-sm text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lavender-600/50 focus-visible:border-white/20"
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {/* KPI Stats Grid - 3 columns responsive */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
-                    {stats.map((stat) => {
-                        const Icon = stat.icon
-                        return (
-                            <Card
-                                key={stat.label}
-                                className={`border border-border-dark hover:border-lavender-600 transition-colors ${stat.card}`}
+                {/* Page Title + Stats on same line */}
+                <div className="mb-8 flex flex-col lg:flex-row lg:items-start lg:gap-8">
+                    {/* Title */}
+                    <div className="flex-shrink-0">
+                        <h1 className="text-4xl font-bold text-white">Dashboard</h1>
+                        <p className="mt-1 text-lg text-gray-400">Overview and recent system activity</p>
+                        <div className="mt-1 flex items-center gap-3">
+                            <button
+                                onClick={handleRefresh}
+                                disabled={refreshing}
+                                className="rounded-lg hover:bg-white/10 transition-colors disabled:opacity-50"
+                                title="Refresh data"
                             >
-                                <CardHeader className="pb-3 pt-4 px-5">
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div className="flex-1">
-                                            <p className="text-gray-400 text-xs font-semibold uppercase tracking-wide mb-2">
-                                                {stat.label}
-                                            </p>
-                                            <p className="text-3xl font-bold text-white mb-1">
-                                                {stat.value}
-                                            </p>
-                                            <p className="text-xs text-gray-300/80">
-                                                {stat.info}
-                                            </p>
+                                <RefreshCw
+                                    size={18}
+                                    className={`text-gray-400 hover:text-gray-200 transition-colors ${refreshing ? 'animate-spin' : ''}`}
+                                />
+                            </button>
+                            <span className="text-sm text-gray-500">
+                                Last updated: {formatLastUpdated()}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* 3 Stats Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 flex-1">
+                        {stats.map((stat) => {
+                            const Icon = stat.icon
+                            return (
+                                <Card
+                                    key={stat.label}
+                                    className={`border border-border-dark hover:border-lavender-600 transition-colors ${stat.card}`}
+                                >
+                                    <CardHeader className="pb-3 pt-4 px-5">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="flex-1">
+                                                <p className="text-gray-400 text-xs font-semibold uppercase tracking-wide mb-2">
+                                                    {stat.label}
+                                                </p>
+                                                <p className="text-3xl font-bold text-white mb-1">
+                                                    {stat.value}
+                                                </p>
+                                                <p className="text-xs text-gray-300/80">
+                                                    {stat.info}
+                                                </p>
+                                            </div>
+                                            <div className={`${stat.bg} p-3 rounded-lg flex-shrink-0`}>
+                                                <Icon
+                                                    className={stat.iconClassName}
+                                                    size={20}
+                                                />
+                                            </div>
                                         </div>
-                                        <div className={`${stat.bg} p-3 rounded-lg flex-shrink-0`}>
-                                            <Icon
-                                                className={stat.iconClassName}
-                                                size={20}
-                                            />
-                                        </div>
-                                    </div>
-                                </CardHeader>
-                            </Card>
-                        )
-                    })}
+                                    </CardHeader>
+                                </Card>
+                            )
+                        })}
+                    </div>
                 </div>
 
                 {/* Charts + Recent Activity in one grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-8 lg:[grid-template-rows:340px_auto] items-stretch">
-                    <Card className="lg:col-span-2 lg:row-start-1 flex flex-col">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-8 lg:[grid-template-rows:auto_auto] items-stretch">
+                    <Card className="lg:col-span-2 lg:row-start-1 flex flex-col min-h-[318px]">
                         <CardHeader className="pb-3 pt-4 px-5">
                             <div>
                                 <CardTitle className="text-lg font-semibold text-white flex items-center gap-2">
@@ -453,7 +448,7 @@ function Dashboard() {
                         </CardContent>
                     </Card>
 
-                    <Card className="lg:col-start-3 lg:row-start-1 h-full flex flex-col">
+                    <Card className="lg:col-start-3 lg:row-start-1 h-full flex flex-col min-h-[318px]">
                         <CardHeader className="pb-3 pt-4 px-5">
                             <div>
                                 <CardTitle className="text-lg font-semibold text-white flex items-center gap-2">
@@ -534,7 +529,7 @@ function Dashboard() {
                     </Card>
 
                     {/* Recent Activity - aligned with Location (same row) */}
-                    <Card className="lg:col-span-2 lg:row-start-2 h-full flex flex-col">
+                    <Card className="lg:col-span-2 lg:row-start-2 h-full flex flex-col min-h-[320px]">
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 pt-4 px-5">
                             <div className="flex items-center gap-2">
                                 <Activity className="text-lavender-400" size={18} />
@@ -560,45 +555,80 @@ function Dashboard() {
                                     <Table>
                                         <TableHeader>
                                             <TableRow className="hover:bg-transparent">
-                                                <TableHead className="px-5 py-3 text-xs font-semibold uppercase text-gray-400">Name</TableHead>
-                                                <TableHead className="px-5 py-3 text-xs font-semibold uppercase text-gray-400">Timestamp</TableHead>
-                                                <TableHead className="px-5 py-3 text-xs font-semibold uppercase text-gray-400">Action</TableHead>
-                                                <TableHead className="px-5 py-3 text-xs font-semibold uppercase text-gray-400">Asset</TableHead>
-                                                <TableHead className="px-5 py-3 text-xs font-semibold uppercase text-gray-400">Details</TableHead>
+                                                <TableHead className="px-5 py-2 text-[10px] font-semibold uppercase text-gray-400">Name</TableHead>
+                                                <TableHead className="px-5 py-2 text-[10px] font-semibold uppercase text-gray-400">Timestamp</TableHead>
+                                                <TableHead className="px-5 py-2 text-[10px] font-semibold uppercase text-gray-400">Action</TableHead>
+                                                <TableHead className="px-5 py-2 text-[10px] font-semibold uppercase text-gray-400">Item</TableHead>
+                                                <TableHead className="px-5 py-2 text-[10px] font-semibold uppercase text-gray-400">Details</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {pagedLogs.map((log) => (
-                                                <TableRow key={log.id}>
-                                                    <TableCell className="px-5 py-3 text-xs text-gray-300">
-                                                        {log.userName || '—'}
-                                                    </TableCell>
-                                                    <TableCell className="px-5 py-3 text-xs text-gray-400">
-                                                        {new Date(log.timestamp).toLocaleTimeString(undefined, {
-                                                            hour: '2-digit',
-                                                            minute: '2-digit',
-                                                            second: '2-digit',
-                                                        })}
-                                                    </TableCell>
-                                                    <TableCell className="px-5 py-3">
-                                                        <Badge className="bg-lavender-600/20 text-lavender-300 text-xs border border-lavender-600/40">
-                                                            {log.action}
-                                                        </Badge>
-                                                    </TableCell>
-                                                    <TableCell className="px-5 py-3">
-                                                        <code className="text-xs bg-dark-700 text-lavender-300 px-2.5 py-1 rounded border border-border-dark font-mono">
-                                                            {log.assetQrCode?.slice(0, 10) || '—'}
-                                                        </code>
-                                                    </TableCell>
-                                                    <TableCell className="px-5 py-3 text-gray-400 text-xs">
-                                                        {log.oldStatus && log.newStatus
-                                                            ? `${log.oldStatus} → ${log.newStatus}`
-                                                            : log.oldLocation && log.newLocation
-                                                                ? `${log.oldLocation} → ${log.newLocation}`
-                                                                : '—'}
-                                                    </TableCell>
-                                                </TableRow>
-                                            ))}
+                                            {pagedLogs.map((log) => {
+                                                // Determine item display and type
+                                                let itemDisplay = '—'
+                                                if (log.assetQrCode) {
+                                                    itemDisplay = `Asset: ${log.assetQrCode?.slice(0, 10) || 'N/A'}`
+                                                } else if (log.monitor) {
+                                                    itemDisplay = `Mon: ${log.monitor.qr_code || 'N/A'}`
+                                                } else if (log.unit) {
+                                                    itemDisplay = `Unit: ${log.unit.qr_code || 'N/A'}`
+                                                }
+
+                                                // Preference order: description > old/new status/location
+                                                let detailsDisplay = '—'
+                                                if (log.description) {
+                                                    detailsDisplay = log.description
+                                                } else if (log.oldStatus && log.newStatus) {
+                                                    detailsDisplay = `${log.oldStatus} → ${log.newStatus}`
+                                                } else if (log.oldLocation && log.newLocation) {
+                                                    detailsDisplay = `${log.oldLocation} → ${log.newLocation}`
+                                                }
+
+                                                return (
+                                                    <TableRow key={log.id}>
+                                                        <TableCell className="px-5 py-3 text-xs text-gray-300">
+                                                            {log.userName || '—'}
+                                                        </TableCell>
+                                                        <TableCell className="px-5 py-3 text-xs text-gray-400">
+                                                            {new Date(log.timestamp).toLocaleTimeString(undefined, {
+                                                                hour: '2-digit',
+                                                                minute: '2-digit',
+                                                                second: '2-digit',
+                                                            })}
+                                                        </TableCell>
+                                                        <TableCell className="px-5 py-3">
+                                                            <Badge className="bg-lavender-600/20 text-lavender-300 text-xs border border-lavender-600/40">
+                                                                {log.action}
+                                                            </Badge>
+                                                        </TableCell>
+                                                        <TableCell className="px-5 py-3">
+                                                            <code className="text-xs bg-dark-700 text-lavender-300 px-2.5 py-1 rounded border border-border-dark font-mono">
+                                                                {itemDisplay}
+                                                            </code>
+                                                        </TableCell>
+                                                        <TableCell className="px-5 py-3 text-gray-400 text-xs">
+                                                            <div className="flex items-center justify-between gap-2">
+                                                                <span className="truncate max-w-xs" title={detailsDisplay}>
+                                                                    {detailsDisplay.length > 50 ? `${detailsDisplay.substring(0, 50)}...` : detailsDisplay}
+                                                                </span>
+                                                                {(log.description && (log.description.includes(';') || log.description.length > 50)) && (
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        className="text-lavender-400 hover:text-lavender-300 text-xs px-2 py-0.5 h-auto whitespace-nowrap"
+                                                                        onClick={() => {
+                                                                            setSelectedChangeLog(log)
+                                                                            setChangeDetailsOpen(true)
+                                                                        }}
+                                                                    >
+                                                                        View More →
+                                                                    </Button>
+                                                                )}
+                                                            </div>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                )
+                                            })}
                                         </TableBody>
                                     </Table>
                                 </div>
@@ -609,9 +639,9 @@ function Dashboard() {
                             )}
 
                             {filteredLogs.length > LOG_PAGE_SIZE ? (
-                                <div className="px-5 py-4 border-t border-white/10">
+                                <div className="flex justify-end px-5 py-4 border-t border-white/10 bg-dark-800/50">
                                     <TablePagination
-                                        align="center"
+                                        align="right"
                                         currentPage={logPage + 1}
                                         totalPages={totalLogPages}
                                         onPageChange={(page) => setLogPage(page - 1)}
@@ -621,7 +651,7 @@ function Dashboard() {
                         </CardContent>
                     </Card>
 
-                    <Card className="lg:col-start-3 lg:row-start-2 h-full flex flex-col">
+                    <Card className="lg:col-start-3 lg:row-start-2 h-full flex flex-col min-h-[320px]">
                         <CardHeader className="pb-3 pt-4 px-5">
                             <div>
                                 <CardTitle className="text-lg font-semibold text-white flex items-center gap-2">
@@ -711,6 +741,12 @@ function Dashboard() {
                     </Card>
                 </div>
             </div>
+
+            <ChangeDetailsModal
+                isOpen={changeDetailsOpen}
+                onClose={() => setChangeDetailsOpen(false)}
+                log={selectedChangeLog}
+            />
         </div>
     )
 }

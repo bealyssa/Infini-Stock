@@ -5,15 +5,35 @@ async function listActivityLogs(req, res) {
     try {
         const limitRaw = req.query.limit
         const limit = Math.min(Math.max(Number(limitRaw || 50) || 50, 1), 200)
+        const itemId = req.query.itemId
+        const itemType = req.query.itemType
+
+        console.log(`\n[ActivityLogsController] Request:`, { itemId, itemType, limit })
 
         const role = req.auth?.role
         const userId = req.auth?.userId
         const includeAll = role === 'admin'
 
-        const logs = await assetService.listActivityLogs({
+        let filterColumn = null
+        let filterId = null
+
+        // Determine which column to filter by based on itemType
+        if (itemId && itemType) {
+            if (itemType === 'unit') {
+                filterColumn = 'unit_id'
+                filterId = itemId
+            } else if (itemType === 'monitor') {
+                filterColumn = 'monitor_id'
+                filterId = itemId
+            }
+        }
+
+        const logs = await require('../services/assetService').listActivityLogs({
             limit,
             userId,
             includeAll,
+            filterColumn,
+            filterId,
         })
         return ok(
             res,
@@ -21,7 +41,10 @@ async function listActivityLogs(req, res) {
                 id: log.id,
                 assetId: log.asset?.id,
                 assetQrCode: log.asset?.qr_code,
+                monitor: log.monitor,
+                unit: log.unit,
                 action: log.action,
+                description: log.description,
                 oldLocation: log.old_location,
                 newLocation: log.new_location,
                 oldStatus: log.old_status,

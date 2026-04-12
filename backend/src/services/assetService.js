@@ -220,17 +220,36 @@ async function swapMonitor({ systemUnitQr, oldMonitorQr, newMonitorQr, userId })
     }
 }
 
-async function listActivityLogs({ limit = 100, userId, includeAll = false } = {}) {
+async function listActivityLogs({ limit = 100, userId, includeAll = false, filterColumn, filterId } = {}) {
     const activityRepo = AppDataSource.getRepository('ActivityLog')
 
-    const where = includeAll ? undefined : { user_id: userId }
+    console.log(`\n[AssetService] listActivityLogs called with:`, { filterColumn, filterId, userId, includeAll, limit })
 
-    return activityRepo.find({
-        where,
-        relations: { asset: true, user: true },
+    // Build where clause based on filters
+    let where = {}
+    if (filterColumn && filterId) {
+        where[filterColumn] = filterId
+        console.log(`[AssetService] Using ${filterColumn} filter:`, filterId)
+    } else if (!includeAll) {
+        where.user_id = userId
+        console.log(`[AssetService] Using user_id filter:`, userId)
+    } else {
+        console.log(`[AssetService] No filters applied - admin view`)
+    }
+
+    const finalWhere = Object.keys(where).length > 0 ? where : undefined
+    console.log(`[AssetService] Final where clause:`, finalWhere)
+
+    const results = await activityRepo.find({
+        where: finalWhere,
+        relations: { asset: true, monitor: true, unit: true, user: true },
         order: { timestamp: 'DESC' },
         take: limit,
     })
+
+    console.log(`[AssetService] Query returned ${results.length} logs`)
+
+    return results
 }
 
 async function upsertAssetMeta({ qrCode, type, imageData, description, userId }) {

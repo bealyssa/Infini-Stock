@@ -5,10 +5,12 @@ import {
     PaginationLink,
     PaginationNext,
     PaginationPrevious,
+    PaginationFirst,
+    PaginationLast,
 } from './ui/Pagination'
 
 function getPageModel(totalPages, currentPage) {
-    if (!totalPages || totalPages <= 1) return []
+    if (!totalPages) return []
 
     const safeCurrent = Math.min(Math.max(1, currentPage || 1), totalPages)
     const pages = []
@@ -31,7 +33,7 @@ function getPageModel(totalPages, currentPage) {
 }
 
 function TablePagination({ currentPage, totalPages, onPageChange, align = 'end', className = '' }) {
-    if (!totalPages || totalPages <= 1) return null
+    if (!totalPages) totalPages = 1
 
     const safeCurrent = Math.min(Math.max(1, currentPage || 1), totalPages)
     const model = getPageModel(totalPages, safeCurrent)
@@ -45,37 +47,53 @@ function TablePagination({ currentPage, totalPages, onPageChange, align = 'end',
     return (
         <div className={className}>
             <Pagination className={justifyClass}>
-                <PaginationContent className="gap-1">
-                <PaginationItem>
-                    <PaginationPrevious
-                        onClick={() => onPageChange(Math.max(1, safeCurrent - 1))}
-                        disabled={safeCurrent === 1}
-                    />
-                </PaginationItem>
+                <PaginationContent className="gap-2">
+                    <PaginationItem>
+                        <PaginationFirst
+                            onClick={() => onPageChange(1)}
+                            disabled={safeCurrent === 1}
+                        />
+                    </PaginationItem>
 
-                {model.map((item, idx) =>
-                    item === 'ellipsis' ? (
-                        <PaginationItem key={`e-${idx}`}>
-                            <span className="px-1 text-xs text-gray-500">…</span>
-                        </PaginationItem>
-                    ) : (
-                        <PaginationItem key={item}>
-                            <PaginationLink
-                                isActive={item === safeCurrent}
-                                onClick={() => onPageChange(item)}
-                            >
-                                {item}
-                            </PaginationLink>
-                        </PaginationItem>
-                    ),
-                )}
+                    <PaginationItem>
+                        <PaginationPrevious
+                            onClick={() => onPageChange(Math.max(1, safeCurrent - 1))}
+                            disabled={safeCurrent === 1}
+                        />
+                    </PaginationItem>
 
-                <PaginationItem>
-                    <PaginationNext
-                        onClick={() => onPageChange(Math.min(totalPages, safeCurrent + 1))}
-                        disabled={safeCurrent === totalPages}
-                    />
-                </PaginationItem>
+                    <div className="flex gap-1">
+                        {model.map((item, idx) =>
+                            item === 'ellipsis' ? (
+                                <PaginationItem key={`e-${idx}`}>
+                                    <span className="px-1 text-xs text-gray-500">…</span>
+                                </PaginationItem>
+                            ) : (
+                                <PaginationItem key={item}>
+                                    <PaginationLink
+                                        isActive={item === safeCurrent}
+                                        onClick={() => onPageChange(item)}
+                                    >
+                                        {item}
+                                    </PaginationLink>
+                                </PaginationItem>
+                            ),
+                        )}
+                    </div>
+
+                    <PaginationItem>
+                        <PaginationNext
+                            onClick={() => onPageChange(Math.min(totalPages, safeCurrent + 1))}
+                            disabled={safeCurrent === totalPages}
+                        />
+                    </PaginationItem>
+
+                    <PaginationItem>
+                        <PaginationLast
+                            onClick={() => onPageChange(totalPages)}
+                            disabled={safeCurrent === totalPages}
+                        />
+                    </PaginationItem>
                 </PaginationContent>
             </Pagination>
         </div>

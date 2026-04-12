@@ -246,15 +246,15 @@ export default function DeviceEditModal({
                                 ) : null}
                             </div>
 
-                            <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                            <div className="rounded-lg border border-[#3d2e5c] bg-[#0f0a1a] p-3">
                                 {imageData ? (
                                     <img
                                         src={imageData}
                                         alt={draft.deviceName || 'Device'}
-                                        className="h-56 w-full rounded-lg object-cover"
+                                        className="h-56 w-full rounded-md object-cover"
                                     />
                                 ) : (
-                                    <div className="flex h-56 items-center justify-center rounded-lg border border-dashed border-white/10 bg-black/20">
+                                    <div className="flex h-56 items-center justify-center rounded-md border border-dashed border-[#3d2e5c] bg-[#0f0a1a]">
                                         <div className="flex flex-col items-center gap-2 text-gray-500">
                                             <ImageIcon size={22} />
                                             <span className="text-xs">No image</span>
@@ -305,9 +305,9 @@ export default function DeviceEditModal({
                         </div>
 
                         {/* Right: Details */}
-                        <div className="space-y-4">
+                        <div className="space-y-2">
                             <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">
+                                <label className="block text-sm font-medium text-gray-300 mb-1">
                                     Device Name
                                 </label>
                                 <Input
@@ -320,14 +320,14 @@ export default function DeviceEditModal({
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">
+                                <label className="block text-sm font-medium text-gray-300 mb-1">
                                     QR Code
                                 </label>
                                 <Input name="qrCode" value={draft.qrCode} disabled />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">
+                                <label className="block text-sm font-medium text-gray-300 mb-1">
                                     Status
                                 </label>
                                 <Select name="status" value={draft.status} onChange={handleChange}>
@@ -339,7 +339,7 @@ export default function DeviceEditModal({
 
                             {isUnit ? (
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">
                                         Location
                                     </label>
                                     <Input
@@ -353,7 +353,7 @@ export default function DeviceEditModal({
 
                             {isMonitor ? (
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                                    <label className="block text-sm font-medium text-gray-300 mb-1">
                                         Linked System Unit
                                     </label>
                                     <Select
@@ -372,7 +372,7 @@ export default function DeviceEditModal({
                             ) : null}
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2">
+                                <label className="block text-sm font-medium text-gray-300 mb-1">
                                     Description
                                 </label>
                                 <textarea
@@ -381,7 +381,7 @@ export default function DeviceEditModal({
                                     onChange={handleChange}
                                     placeholder="Add device details…"
                                     rows={5}
-                                    className="w-full rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-sm text-gray-200 placeholder:text-gray-500 outline-none focus:border-lavender-500 focus:ring-2 focus:ring-lavender-500/20"
+                                    className="w-full rounded-md border border-[#3d2e5c] bg-[#0f0a1a] px-3 py-2 text-sm text-gray-200 placeholder:text-gray-500 outline-none focus:border-lavender-500 focus:ring-2 focus:ring-lavender-500/20"
                                 />
                             </div>
                         </div>

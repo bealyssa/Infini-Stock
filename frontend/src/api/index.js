@@ -38,6 +38,7 @@ export const unitApi = {
     createUnit: ({ deviceName, qrCode, status, location, description } = {}) =>
         api.post('/units', { deviceName, qrCode, status, location, description }),
     updateUnit: (id, payload = {}) => api.patch(`/units/${id}`, payload),
+    deleteUnit: (id) => api.delete(`/units/${id}`),
 }
 
 export const monitorApi = {
@@ -45,6 +46,7 @@ export const monitorApi = {
     createMonitor: ({ deviceName, qrCode, status, description, linkedUnitId } = {}) =>
         api.post('/monitors', { deviceName, qrCode, status, description, linkedUnitId }),
     updateMonitor: (id, payload = {}) => api.patch(`/monitors/${id}`, payload),
+    deleteMonitor: (id) => api.delete(`/monitors/${id}`),
 }
 
 export const activityApi = {

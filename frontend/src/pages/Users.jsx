@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Trash2, Edit2, ToggleLeft, ToggleRight } from 'lucide-react'
+import { Plus, Trash2, Edit2, ToggleLeft, ToggleRight, Trash } from 'lucide-react'
 import { Button } from '../components/ui/Button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/Dialog'
 import { Input } from '../components/ui/Input'
@@ -40,6 +40,8 @@ function Users() {
         password: '',
         role: 'staff',
     })
+
+    const [selectedUsers, setSelectedUsers] = useState(new Set())
 
     const validateEmail = (value) => {
         if (isEditMode) return ''
@@ -109,6 +111,38 @@ function Users() {
         (currentPage - 1) * ITEMS_PER_PAGE,
         currentPage * ITEMS_PER_PAGE,
     )
+
+    const toggleUserSelection = (userId) => {
+        const newSelected = new Set(selectedUsers)
+        if (newSelected.has(userId)) {
+            newSelected.delete(userId)
+        } else {
+            newSelected.add(userId)
+        }
+        setSelectedUsers(newSelected)
+    }
+
+    const toggleSelectAll = () => {
+        if (selectedUsers.size === pagedUsers.length) {
+            setSelectedUsers(new Set())
+        } else {
+            setSelectedUsers(new Set(pagedUsers.map(u => u._id)))
+        }
+    }
+
+    const handleBulkDelete = async () => {
+        if (selectedUsers.size === 0) return
+        if (!confirm(`Delete ${selectedUsers.size} user(s)? This cannot be undone.`)) return
+
+        try {
+            const idsToDelete = Array.from(selectedUsers)
+            await Promise.all(idsToDelete.map(id => adminApi.deleteUser(id)))
+            setUsers(prev => prev.filter(u => !idsToDelete.includes(u._id)))
+            setSelectedUsers(new Set())
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to delete users')
+        }
+    }
 
     const validateForm = (data) => {
         return {
@@ -309,13 +343,25 @@ function Users() {
                         {users.length} total users
                     </p>
                 </div>
-                <Button
-                    onClick={() => handleOpenDialog()}
-                    className="flex items-center gap-2"
-                >
-                    <Plus size={20} />
-                    Add User
-                </Button>
+                <div className="flex gap-2">
+                    <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleBulkDelete}
+                        disabled={selectedUsers.size === 0}
+                        className="bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        <Trash size={16} className="mr-2" />
+                        Delete {selectedUsers.size > 0 && `(${selectedUsers.size})`}
+                    </Button>
+                    <Button
+                        onClick={() => handleOpenDialog()}
+                        className="flex items-center gap-2"
+                    >
+                        <Plus size={20} />
+                        Add User
+                    </Button>
+                </div>
             </div>
 
             {error && (
@@ -344,6 +390,14 @@ function Users() {
                         <Table>
                             <TableHeader>
                                 <TableRow className="hover:bg-transparent">
+                                    <TableHead className="px-6 py-3 text-left text-sm font-semibold text-lavender-200 w-12">
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedUsers.size === pagedUsers.length && pagedUsers.length > 0}
+                                            onChange={toggleSelectAll}
+                                            className="appearance-none w-4 h-4 border-2 border-[#3d2e5c] bg-[#0f0a1a] rounded cursor-pointer checked:bg-lavender-600 checked:border-lavender-600 checked:bg-[length:100%_100%] checked:[background-image:url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0id2hpdGUiPjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTE2LjcwNyA1LjI5M2ExIDEgMCAwIDEgMCAxLjQxNGwtOCA4YTEgMSAwIDAgMS0xLjQxNCAwbC00LTRhMSAxIDAgMCAxIDEuNDE0LTEuNDE0TDggMTIuNTg2bDcuMjkzLTcuMjkzYTEgMSAwIDAgMSAxLjQxNCAweiIgY2xpcC1ydWxlPSJldmVub2RkIi8+PC9zdmc+')] checked:bg-center checked:bg-no-repeat transition-colors"
+                                        />
+                                    </TableHead>
                                     <TableHead className="px-6 py-3 text-left text-sm font-semibold text-lavender-200">Name</TableHead>
                                     <TableHead className="px-6 py-3 text-left text-sm font-semibold text-lavender-200">Email</TableHead>
                                     <TableHead className="px-6 py-3 text-left text-sm font-semibold text-lavender-200">Role</TableHead>
@@ -353,16 +407,20 @@ function Users() {
                             </TableHeader>
                             <TableBody>
                                 {pagedUsers.map((user) => (
-                                    <TableRow key={user.id}>
+                                    <TableRow key={user._id}
+                                        onClick={() => openDetails(user)}
+                                        className="hover:bg-white/5 transition-colors cursor-pointer"
+                                    >
+                                        <TableCell className="px-6 py-3" onClick={(e) => e.stopPropagation()}>
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedUsers.has(user._id)}
+                                                onChange={() => toggleUserSelection(user._id)}
+                                                className="appearance-none w-4 h-4 border-2 border-[#3d2e5c] bg-[#0f0a1a] rounded cursor-pointer checked:bg-lavender-600 checked:border-lavender-600 checked:bg-[length:100%_100%] checked:[background-image:url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0id2hpdGUiPjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTE2LjcwNyA1LjI5M2ExIDEgMCAwIDEgMCAxLjQxNGwtOCA4YTEgMSAwIDAgMS0xLjQxNCAwbC00LTRhMSAxIDAgMCAxIDEuNDE0LTEuNDE0TDggMTIuNTg2bDcuMjkzLTcuMjkzYTEgMSAwIDAgMSAxLjQxNCAweiIgY2xpcC1ydWxlPSJldmVub2RkIi8+PC9zdmc+')] checked:bg-center checked:bg-no-repeat transition-colors"
+                                            />
+                                        </TableCell>
                                         <TableCell className="px-6 py-3 text-gray-100">
-                                            <div className="flex items-center gap-3">
-                                                <div className="h-9 w-9 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-xs font-semibold text-lavender-200">
-                                                    {getInitials(user.full_name)}
-                                                </div>
-                                                <div className="min-w-0">
-                                                    <div className="font-medium text-white truncate">{user.full_name}</div>
-                                                </div>
-                                            </div>
+                                            <div className="font-medium text-white">{user.full_name}</div>
                                         </TableCell>
                                         <TableCell className="px-6 py-3 text-gray-300">
                                             {user.email}
@@ -413,19 +471,20 @@ function Users() {
                             </TableBody>
                         </Table>
 
-                        {users.length > ITEMS_PER_PAGE ? (
-                            <div className="px-5 py-4 border-t border-white/10">
-                                <TablePagination
-                                    align="center"
-                                    currentPage={currentPage}
-                                    totalPages={totalPages}
-                                    onPageChange={setCurrentPage}
-                                />
-                            </div>
-                        ) : null}
                     </>
                 )}
             </Card>
+
+            <div className="mt-6">
+                <div className="px-5 py-4">
+                    <TablePagination
+                        align="end"
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                    />
+                </div>
+            </div>
 
             {/* Add/Edit User Dialog */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -435,9 +494,9 @@ function Users() {
                             {isEditMode ? 'Edit User' : 'Add New User'}
                         </DialogTitle>
                     </DialogHeader>
-                    <form onSubmit={handleSubmit} className="space-y-4">
+                    <form onSubmit={handleSubmit} className="space-y-2">
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">
+                            <label className="block text-sm font-medium text-gray-300 mb-1">
                                 Full Name
                             </label>
                             <Input
@@ -454,7 +513,7 @@ function Users() {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">
+                            <label className="block text-sm font-medium text-gray-300 mb-1">
                                 Email
                             </label>
                             <Input
@@ -475,7 +534,7 @@ function Users() {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">
+                            <label className="block text-sm font-medium text-gray-300 mb-1">
                                 {isEditMode ? 'Password (leave blank to keep current)' : 'Password'}
                             </label>
                             <Input
@@ -496,7 +555,7 @@ function Users() {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-2">
+                            <label className="block text-sm font-medium text-gray-300 mb-1">
                                 Role
                             </label>
                             <Select

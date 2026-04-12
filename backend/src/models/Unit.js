@@ -47,6 +47,27 @@ module.exports = new EntitySchema({
             type: 'timestamp',
             updateDate: true,
         },
+        model_type: {
+            type: 'varchar',
+            length: 100,
+            nullable: true,
+        },
+        serial_number: {
+            type: 'varchar',
+            length: 100,
+            unique: true,
+            nullable: true,
+        },
+        condition: {
+            type: 'varchar',
+            length: 20,
+            nullable: true,
+            default: 'good',
+        },
+        notes: {
+            type: 'text',
+            nullable: true,
+        },
     },
     relations: {
         creator: {

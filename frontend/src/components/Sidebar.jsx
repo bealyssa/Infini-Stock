@@ -50,47 +50,56 @@ function Sidebar() {
         <>
             <button
                 onClick={() => setOpen(!open)}
-                className="fixed top-4 left-4 z-50 lg:hidden p-2 rounded-lg bg-[#2d2d2d] text-lavender-400 hover:bg-[#3d3d3d] hover:text-lavender-300 transition"
+                className="fixed top-4 left-4 z-10 md:hidden p-2 rounded-lg bg-lavender-600 text-white hover:bg-lavender-700 transition"
             >
                 {open ? <X size={24} /> : <Menu size={24} />}
             </button>
 
+            {/* Backdrop for mobile */}
+            {open && (
+                <div
+                    className="fixed inset-0 bg-black/50 z-10 md:hidden"
+                    onClick={() => setOpen(false)}
+                />
+            )}
+
             <aside
-                className={`fixed left-0 top-0 h-screen w-64 bg-transparent text-gray-100 transition-transform duration-300 ease-in-out z-40 lg:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'
+                className={`fixed left-0 top-0 h-screen w-64 bg-[#190F2B] border-r border-[#3d2e5c] text-gray-100 transition-transform duration-300 ease-in-out z-20 md:translate-x-0 ${open ? 'translate-x-0' : '-translate-x-full'
                     }`}
             >
-                <div className="m-3 h-[calc(100vh-1.5rem)] rounded-2xl border border-[#3d2e5c]/60 bg-gradient-to-b from-[#1a0f2e]/85 to-[#2d1f4d]/50 backdrop-blur-md shadow-lg shadow-black/30 overflow-hidden flex flex-col">
-                    <div className="p-6 border-b border-white/10">
-                        <div className="flex items-center gap-2 mb-2">
+                <div className="h-full flex flex-col">
+                    {/* Header */}
+                    <div className="p-[23px] border-b border-[#3d2e5c]">
+                        <div className="flex items-center gap-3">
                             <Zap className="text-lavender-500" size={28} />
-                            <h1 className="text-2xl font-bold text-white">
-                                Infini-Stock
-                            </h1>
+                            <div>
+                                <h1 className="text-xl font-bold text-white">
+                                    Infini-Stock
+                                </h1>
+                            </div>
                         </div>
-                        <p className="text-sm text-gray-300/80">
-                            IoT Inventory System
-                        </p>
                     </div>
 
-                    <nav className="flex-1 px-4 py-4 space-y-4">
+                    {/* Navigation */}
+                    <nav className="flex-1 px-4 py-6 space-y-8 overflow-y-auto">
                         {menuGroups.map((group) => (
                             <div key={group.title}>
-                                <p className="px-3 mb-2 text-[11px] font-semibold uppercase tracking-wider text-gray-300/70">
+                                <p className="px-3 mb-3 text-[11px] font-semibold uppercase tracking-wider text-gray-500">
                                     {group.title}
                                 </p>
-                                <div className="space-y-2">
+                                <div className="space-y-1">
                                     {group.items.map(({ path, label, icon: Icon }) => (
                                         <Link
                                             key={path}
                                             to={path}
                                             onClick={() => setOpen(false)}
                                             className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${isActive(path)
-                                                ? 'bg-lavender-600/20 text-lavender-200 border-l-4 border-lavender-600'
-                                                : 'text-gray-300/70 hover:bg-white/5 hover:text-lavender-100'
+                                                ? 'bg-[#311850] text-lavender-300 border-l-2 border-lavender-600'
+                                                : 'text-gray-400 hover:text-gray-200 hover:bg-white/5'
                                                 }`}
                                         >
                                             <Icon size={20} />
-                                            <span className="font-medium">{label}</span>
+                                            <span className={`text-sm ${isActive(path) ? 'font-bold' : 'font-medium'}`}>{label}</span>
                                         </Link>
                                     ))}
                                 </div>
@@ -98,10 +107,11 @@ function Sidebar() {
                         ))}
                     </nav>
 
-                    <div className="p-4 border-t border-white/10">
+                    {/* Footer */}
+                    <div className="p-4 border-t border-[#3d2e5c]">
                         <button
                             onClick={handleLogout}
-                            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300/70 hover:bg-white/5 hover:text-lavender-100 transition-all text-sm font-medium"
+                            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-gray-400 hover:text-gray-200 hover:bg-white/5 transition-all text-sm font-medium"
                         >
                             <LogOut size={20} />
                             Logout
@@ -109,8 +119,6 @@ function Sidebar() {
                     </div>
                 </div>
             </aside>
-
-            <div className="lg:ml-64" />
 
             <Dialog open={logoutDialog.open} onOpenChange={logoutDialog.onOpenChange}>
                 <DialogContent>

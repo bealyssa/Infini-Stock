@@ -3,11 +3,13 @@ import { useEffect, useState } from 'react'
 import { activityApi } from '../api'
 import { Badge } from '../components/ui/Badge'
 import { capitalize } from '../lib/utils'
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
+import { Card, CardContent, CardTitle } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table'
+import { Button } from '../components/ui/Button'
 import FullPageLoader from '../components/FullPageLoader'
 import TablePagination from '../components/TablePagination'
+import { ChangeDetailsModal } from '../components/ActionModals'
 
 function ActivityLogs() {
     const currentUser = (() => {
@@ -25,6 +27,8 @@ function ActivityLogs() {
     const [error, setError] = useState(null)
     const [filter, setFilter] = useState('')
     const [currentPage, setCurrentPage] = useState(1)
+    const [selectedChangeLog, setSelectedChangeLog] = useState(null)
+    const [changeDetailsOpen, setChangeDetailsOpen] = useState(false)
     const itemsPerPage = 10
 
     useEffect(() => {
@@ -47,10 +51,13 @@ function ActivityLogs() {
         ? logs.filter((log) => {
             const actionMatch = (log.action || '').toLowerCase().includes(normalizedFilter)
             const assetMatch = (log.assetQrCode || '').toLowerCase().includes(normalizedFilter)
+            const monitorMatch = (log.monitor?.qr_code || '').toLowerCase().includes(normalizedFilter)
+            const unitMatch = (log.unit?.qr_code || '').toLowerCase().includes(normalizedFilter)
+            const descriptionMatch = (log.description || '').toLowerCase().includes(normalizedFilter)
             const nameMatch = isAdmin
                 ? (log.userName || '').toLowerCase().includes(normalizedFilter)
                 : false
-            return actionMatch || assetMatch || nameMatch
+            return actionMatch || assetMatch || monitorMatch || unitMatch || descriptionMatch || nameMatch
         })
         : logs
 
@@ -106,7 +113,7 @@ function ActivityLogs() {
 
                 <div className="mb-6">
                     <Input
-                        placeholder="Search by action or QR code..."
+                        placeholder="Search by action, QR code, or change details..."
                         value={filter}
                         onChange={(e) => setFilter(e.target.value)}
                         className="w-full"
@@ -114,7 +121,7 @@ function ActivityLogs() {
                     />
                 </div>
 
-                <Card className="overflow-hidden mb-8">
+                <Card className="overflow-hidden mb-5">
                     {error ? (
                         <div className="m-6 rounded-lg border border-red-500/30 bg-red-600/20 p-6 text-red-300">
                             ⚠️ Error: {error}
@@ -126,46 +133,75 @@ function ActivityLogs() {
                                     <TableHead>Name</TableHead>
                                     <TableHead>Timestamp</TableHead>
                                     <TableHead>Action</TableHead>
-                                    <TableHead>Asset</TableHead>
-                                    <TableHead>Old Value</TableHead>
-                                    <TableHead>New Value</TableHead>
+                                    <TableHead>Item</TableHead>
+                                    <TableHead>Changes</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {paginatedLogs.map((log) => (
-                                    <TableRow key={log.id}>
-                                        <TableCell>
-                                            <div className="flex items-center gap-3">
-                                                <div className="h-8 w-8 rounded-full border border-white/10 bg-white/5 flex items-center justify-center text-[11px] font-semibold text-lavender-200">
-                                                    {getInitials(log.userName)}
+                                {paginatedLogs.map((log) => {
+                                    // Determine item display and type
+                                    let itemDisplay = '—'
+                                    if (log.assetQrCode) {
+                                        itemDisplay = `Asset: ${log.assetQrCode?.slice(0, 12) || 'N/A'}`
+                                    } else if (log.monitor) {
+                                        itemDisplay = `Mon: ${log.monitor.qr_code?.slice(0, 12) || 'N/A'}`
+                                    } else if (log.unit) {
+                                        itemDisplay = `Unit: ${log.unit.qr_code?.slice(0, 12) || 'N/A'}`
+                                    }
+
+                                    // Get changes description - prefer detailed description field
+                                    let changesDisplay = '—'
+                                    if (log.description) {
+                                        changesDisplay = log.description
+                                    } else if (log.oldStatus && log.newStatus) {
+                                        changesDisplay = `Status: ${log.oldStatus} → ${log.newStatus}`
+                                    } else if (log.oldLocation && log.newLocation) {
+                                        changesDisplay = `Location: ${log.oldLocation} → ${log.newLocation}`
+                                    }
+
+                                    return (
+                                        <TableRow key={log.id}
+                                            className="cursor-pointer hover:bg-white/5 transition-colors"
+                                        >
+                                            <TableCell>
+                                                <div className="text-sm text-white truncate">{log.userName || '—'}</div>
+                                            </TableCell>
+                                            <TableCell className="text-xs text-gray-300">
+                                                {new Date(log.timestamp).toLocaleString()}
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant={getActionVariant(log.action)}>
+                                                    {capitalize(log.action)}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                <code className="text-xs bg-gray-900 text-lavender-300 px-2 py-1 rounded font-mono">
+                                                    {itemDisplay}
+                                                </code>
+                                            </TableCell>
+                                            <TableCell className="text-gray-300 text-xs max-w-2xl">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <span className="truncate max-w-sm" title={changesDisplay}>
+                                                        {changesDisplay.length > 60 ? `${changesDisplay.substring(0, 60)}...` : changesDisplay}
+                                                    </span>
+                                                    {log.description && (log.description.includes(';') || log.description.length > 50) && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="text-lavender-400 hover:text-lavender-300 text-xs px-2 py-0.5 h-auto whitespace-nowrap"
+                                                            onClick={() => {
+                                                                setSelectedChangeLog(log)
+                                                                setChangeDetailsOpen(true)
+                                                            }}
+                                                        >
+                                                            View More →
+                                                        </Button>
+                                                    )}
                                                 </div>
-                                                <div className="min-w-0">
-                                                    <div className="text-sm text-gray-200 truncate">{log.userName || '—'}</div>
-                                                </div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell className="text-xs text-gray-400">
-                                            {new Date(log.timestamp).toLocaleString()}
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge variant={getActionVariant(log.action)}>
-                                                {capitalize(log.action)}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell>
-                                            <code className="text-xs bg-gray-900 text-white px-2 py-1 rounded font-mono">
-                                                {log.assetQrCode?.slice(0, 16)}
-                                                {log.assetQrCode?.length > 16 && '...'}
-                                            </code>
-                                        </TableCell>
-                                        <TableCell className="text-gray-400 text-xs max-w-xs truncate">
-                                            {log.oldStatus || log.oldLocation ? log.oldStatus || log.oldLocation : '—'}
-                                        </TableCell>
-                                        <TableCell className="text-gray-300 text-xs max-w-xs truncate">
-                                            {log.newStatus || log.newLocation ? log.newStatus || log.newLocation : '—'}
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
+                                            </TableCell>
+                                        </TableRow>
+                                    )
+                                })}
                             </TableBody>
                         </Table>
                     ) : (
@@ -179,30 +215,24 @@ function ActivityLogs() {
                 </Card>
 
                 {filteredLogs.length > 0 && (
-                    <Card>
-                        <CardContent className="pt-6">
-                            <div className="flex flex-col gap-6">
-                                <div className="flex items-center justify-between">
-                                    <p className="text-sm text-gray-400">
-                                        Showing {(currentPage - 1) * itemsPerPage + 1} to{' '}
-                                        {Math.min(currentPage * itemsPerPage, filteredLogs.length)} of{' '}
-                                        {filteredLogs.length} logs
-                                    </p>
-                                </div>
-
-                                {totalPages > 1 ? (
-                                    <TablePagination
-                                        align="center"
-                                        currentPage={currentPage}
-                                        totalPages={totalPages}
-                                        onPageChange={setCurrentPage}
-                                    />
-                                ) : null}
-                            </div>
-                        </CardContent>
-                    </Card>
+                    <div>
+                        <div>
+                            <TablePagination
+                                align="end"
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                onPageChange={setCurrentPage}
+                            />
+                        </div>
+                    </div>
                 )}
             </div>
+
+            <ChangeDetailsModal
+                isOpen={changeDetailsOpen}
+                onClose={() => setChangeDetailsOpen(false)}
+                log={selectedChangeLog}
+            />
         </div>
     )
 }

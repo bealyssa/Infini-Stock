@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState } from 'react'
 import { X } from 'lucide-react'
+import { Portal } from '../Portal'
 
 const DialogContext = createContext()
 
@@ -34,43 +35,47 @@ export function DialogContent({ children, className = '' }) {
     if (!open) return null
 
     return (
-        <>
-            {/* Backdrop */}
-            <div
-                className="fixed inset-0 z-40 bg-black/55 backdrop-blur-sm"
-                onClick={() => onOpenChange(false)}
-            />
-
-            {/* Modal */}
-            <div
-                className={`fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-2xl shadow-black/50 backdrop-blur-xl animate-in fade-in zoom-in-95 ${className}`}
-            >
-                <button
+        <Portal>
+            <>
+                {/* Backdrop */}
+                <div
+                    className="fixed inset-0 bg-black/50"
+                    style={{ zIndex: 9999 }}
                     onClick={() => onOpenChange(false)}
-                    className="absolute right-4 top-4 rounded-md text-gray-400 hover:text-white transition-colors"
+                />
+
+                {/* Modal */}
+                <div
+                    className={`fixed left-1/2 top-1/2 w-[calc(100%-2rem)] sm:w-auto -translate-x-1/2 -translate-y-1/2 rounded-lg border border-[#3d2e5c] bg-[#190F2B] p-5 shadow-2xl shadow-black/70 animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto min-w-fit ${className}`}
+                    style={{ zIndex: 10000 }}
                 >
-                    <X className="h-4 w-4" />
-                </button>
-                <div>{children}</div>
-            </div>
-        </>
+                    <button
+                        onClick={() => onOpenChange(false)}
+                        className="absolute right-6 top-6 text-gray-400 hover:text-gray-100 transition-colors p-1"
+                    >
+                        <X className="h-5 w-5" />
+                    </button>
+                    <div>{children}</div>
+                </div>
+            </>
+        </Portal>
     )
 }
 
 export function DialogHeader({ children, className = '' }) {
-    return <div className={`flex flex-col space-y-1.5 text-center sm:text-left ${className}`}>{children}</div>
+    return <div className={`flex flex-col space-y-1 text-left mb-3 border-b border-[#3d2e5c] pb-3 ${className}`}>{children}</div>
 }
 
 export function DialogFooter({ children, className = '' }) {
-    return <div className={`flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 ${className}`}>{children}</div>
+    return <div className={`flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-3 gap-2 mt-4 pt-3 border-t border-[#3d2e5c] ${className}`}>{children}</div>
 }
 
 export function DialogTitle({ children, className = '' }) {
-    return <h2 className={`text-lg font-semibold text-white ${className}`}>{children}</h2>
+    return <h2 className={`text-xl font-bold text-white tracking-tight ${className}`}>{children}</h2>
 }
 
 export function DialogDescription({ children, className = '' }) {
-    return <p className={`text-sm text-gray-400 ${className}`}>{children}</p>
+    return <p className={`text-sm text-gray-400 leading-relaxed ${className}`}>{children}</p>
 }
 
 // Hook for using dialog state

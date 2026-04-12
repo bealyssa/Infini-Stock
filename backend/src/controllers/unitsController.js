@@ -10,6 +10,8 @@ async function createUnit(req, res) {
         }
 
         const unitRepo = AppDataSource.getRepository('Unit')
+        const activityRepo = AppDataSource.getRepository('ActivityLog')
+
         const existing = await unitRepo.findOne({ where: { qr_code: qrCode } })
         if (existing) {
             return res.status(409).json({ message: 'QR code already exists' })
@@ -25,6 +27,17 @@ async function createUnit(req, res) {
         })
 
         const saved = await unitRepo.save(unit)
+
+        // Log activity
+        await activityRepo.save(
+            activityRepo.create({
+                action: 'created',
+                unit_id: saved.id,
+                user_id: req.auth.userId,
+                description: `Created unit "${deviceName}" (${qrCode}) with status: ${status}${location ? ` at ${location}` : ''}`,
+            })
+        )
+
         const withRelations = await unitRepo.findOne({
             where: { id: saved.id },
             relations: { creator: true, monitors: true },
@@ -37,6 +50,10 @@ async function createUnit(req, res) {
             status: withRelations.status,
             location: withRelations.location,
             description: withRelations.description,
+            modelType: withRelations.model_type,
+            serialNumber: withRelations.serial_number,
+            condition: withRelations.condition || 'good',
+            notes: withRelations.notes,
             createdBy: withRelations.creator?.full_name || null,
             monitorCount: withRelations.monitors?.length || 0,
             createdAt: withRelations.created_at,
@@ -63,6 +80,10 @@ async function listUnits(req, res) {
                 status: unit.status,
                 location: unit.location,
                 description: unit.description,
+                modelType: unit.model_type,
+                serialNumber: unit.serial_number,
+                condition: unit.condition || 'good',
+                notes: unit.notes,
                 createdBy: unit.creator?.full_name || null,
                 monitorCount: unit.monitors?.length || 0,
                 createdAt: unit.created_at,
@@ -84,6 +105,8 @@ async function updateUnit(req, res) {
         }
 
         const unitRepo = AppDataSource.getRepository('Unit')
+        const activityRepo = AppDataSource.getRepository('ActivityLog')
+
         const unit = await unitRepo.findOne({
             where: { id },
             relations: { creator: true, monitors: true },
@@ -93,27 +116,57 @@ async function updateUnit(req, res) {
             return res.status(404).json({ message: 'Unit not found' })
         }
 
+        // Track changes for activity log
+        const changes = []
+
         if (typeof deviceName === 'string') {
             const next = deviceName.trim()
             if (!next) {
                 return res.status(400).json({ message: 'deviceName cannot be empty' })
             }
-            unit.device_name = next
+            if (unit.device_name !== next) {
+                changes.push(`Device name: "${unit.device_name}" → "${next}"`)
+                unit.device_name = next
+            }
         }
 
         if (typeof status === 'string') {
-            unit.status = status
+            if (unit.status !== status) {
+                changes.push(`Status: ${unit.status} → ${status}`)
+                unit.status = status
+            }
         }
 
         if (typeof location === 'string') {
-            unit.location = location.trim() || null
+            const next = location.trim() || null
+            if (unit.location !== next) {
+                changes.push(`Location: "${unit.location || '(unset)'}" → "${next || '(unset)'}"`)
+                unit.location = next
+            }
         }
 
         if (typeof description === 'string') {
-            unit.description = description.trim() || null
+            const next = description.trim() || null
+            if (unit.description !== next) {
+                changes.push(`Description: "${unit.description || '(empty)'}" → "${next || '(empty)'}"`)
+                unit.description = next
+            }
         }
 
         const saved = await unitRepo.save(unit)
+
+        // Log activity if there were changes
+        if (changes.length > 0) {
+            await activityRepo.save(
+                activityRepo.create({
+                    action: 'updated',
+                    unit_id: saved.id,
+                    user_id: req.auth.userId,
+                    description: changes.join('; '),
+                })
+            )
+        }
+
         const withRelations = await unitRepo.findOne({
             where: { id: saved.id },
             relations: { creator: true, monitors: true },

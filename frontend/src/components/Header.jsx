@@ -224,67 +224,55 @@ function Header() {
 
     return (
         <>
-            <header className="fixed top-0 right-0 left-0 lg:left-64 h-[75px] z-30">
-                <div className="h-full px-4 lg:px-6 flex items-center">
-                    <div className="h-[63px] w-full rounded-2xl border border-[#3d2e5c]/60 bg-gradient-to-r from-[#1a0f2e]/80 to-[#2d1f4d]/55 backdrop-blur-md shadow-lg shadow-black/30">
-                        <div className="h-full flex items-center justify-between px-6">
-                            <div className="flex items-center gap-3">
-                                <div className="text-left">
-                                    <p className="text-gray-100 font-semibold text-xl tracking-wide">
-                                        <span className="text-gray-300/80">{pageMeta.category}</span>
-                                        <span className="text-gray-400/70"> / </span>
-                                        <span className="text-gray-100">{pageMeta.page}</span>
-                                    </p>
-                                </div>
-                            </div>
+            <header className="fixed top-0 right-0 left-0 md:left-64 h-[75px] z-30 border-b border-[#3d2e5c] bg-[#190F2B]">
+                <div className="h-full px-6 flex items-center justify-between">
+                    <div className="flex items-center gap-6">
+                        <div>
+                            <p className="text-gray-100 font-semibold text-sm">
+                                {user?.full_name ? user.full_name.charAt(0).toUpperCase() + user.full_name.slice(1) : 'Account'}
+                            </p>
+                            <p className="text-xs text-gray-400 mt-0.5">{user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'User'}</p>
+                        </div>
+                    </div>
 
-                            <div className="flex items-center gap-5">
-                                <div className="text-right">
-                                    <p className="text-gray-100 font-semibold text-lg leading-none">{time}</p>
-                                    <p className="mt-1 text-gray-300/80 text-sm leading-none">{date}</p>
-                                </div>
+                    <div className="flex items-center gap-6">
+                        <div className="text-right">
+                            <p className="text-gray-100 font-semibold text-sm leading-none">{time}</p>
+                            <p className="mt-1 text-gray-400 text-xs leading-none">{date}</p>
+                        </div>
 
-                                <div className="relative" ref={menuRef}>
-                                    <Button
+                        <div className="relative" ref={menuRef}>
+                            <button
+                                type="button"
+                                className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-lavender-600/20 border border-lavender-600/30 hover:bg-lavender-600/30 transition cursor-pointer"
+                                onClick={() => setMenuOpen((v) => !v)}
+                                aria-label="Open account menu"
+                            >
+                                {user?.full_name ? (
+                                    <span className="text-sm font-bold text-lavender-300">
+                                        {getInitials(user.full_name) || (
+                                            <User size={20} className="text-lavender-300" />
+                                        )}
+                                    </span>
+                                ) : (
+                                    <User size={20} className="text-lavender-300" />
+                                )}
+                            </button>
+
+                            {menuOpen ? (
+                                <div className="absolute right-0 mt-2 w-44 overflow-hidden rounded-md border border-[#3d2e5c] bg-[#0f0a1a] shadow-lg">
+                                    <button
                                         type="button"
-                                        variant="ghost"
-                                        className="h-11 px-3.5 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 flex items-center gap-3"
-                                        onClick={() => setMenuOpen((v) => !v)}
-                                        aria-label="Open account menu"
+                                        className="w-full px-4 py-3 text-left text-sm text-gray-200 hover:bg-lavender-500/10"
+                                        onClick={() => {
+                                            setMenuOpen(false)
+                                            accountDialog.onOpenChange(true)
+                                        }}
                                     >
-                                        <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-white/5">
-                                            {user?.full_name ? (
-                                                <span className="text-xs font-bold text-gray-100">
-                                                    {getInitials(user.full_name) || (
-                                                        <User size={18} className="text-gray-300" />
-                                                    )}
-                                                </span>
-                                            ) : (
-                                                <User size={18} className="text-gray-300" />
-                                            )}
-                                        </span>
-
-                                        <span className="text-sm font-semibold text-gray-100 whitespace-nowrap max-w-[200px] truncate">
-                                            {user?.full_name || 'Account'}
-                                        </span>
-                                    </Button>
-
-                                    {menuOpen ? (
-                                        <div className="absolute right-0 mt-2 w-44 overflow-hidden rounded-md border border-[#3d2e5c] bg-[#0f0a1a] shadow-lg">
-                                            <button
-                                                type="button"
-                                                className="w-full px-4 py-3 text-left text-sm text-gray-200 hover:bg-lavender-500/10"
-                                                onClick={() => {
-                                                    setMenuOpen(false)
-                                                    accountDialog.onOpenChange(true)
-                                                }}
-                                            >
-                                                Account
-                                            </button>
-                                        </div>
-                                    ) : null}
+                                        Account
+                                    </button>
                                 </div>
-                            </div>
+                            ) : null}
                         </div>
                     </div>
                 </div>

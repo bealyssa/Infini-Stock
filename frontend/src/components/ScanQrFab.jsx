@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { BrowserQRCodeReader } from '@zxing/browser'
-import { Camera, QrCode, Upload, XCircle } from 'lucide-react'
+import { Camera, QrCode, Upload, XCircle, Printer } from 'lucide-react'
 import { assetApi } from '../api'
 import { Button } from './ui/Button'
 import {
@@ -12,6 +12,7 @@ import {
     DialogTitle,
     useDialog,
 } from './ui/Dialog'
+import { PrintQRModal } from './ActionModals'
 
 
 export default function ScanQrFab() {
@@ -22,6 +23,7 @@ export default function ScanQrFab() {
     const [error, setError] = useState(null)
     const [decodedQr, setDecodedQr] = useState(null)
     const [asset, setAsset] = useState(null)
+    const [printQRModalOpen, setPrintQRModalOpen] = useState(false)
 
     const videoRef = useRef(null)
     const controlsRef = useRef(null)
@@ -88,44 +90,44 @@ export default function ScanQrFab() {
 
         let cancelled = false
 
-        ;(async () => {
-            try {
-                const controls = await codeReader.decodeFromVideoDevice(
-                    undefined,
-                    videoRef.current,
-                    (result, resultError, controlsInner) => {
-                        if (cancelled) return
-                        if (result && !handledRef.current) {
-                            handledRef.current = true
-                            try {
-                                controlsInner.stop()
-                            } catch {
-                                // ignore
+            ; (async () => {
+                try {
+                    const controls = await codeReader.decodeFromVideoDevice(
+                        undefined,
+                        videoRef.current,
+                        (result, resultError, controlsInner) => {
+                            if (cancelled) return
+                            if (result && !handledRef.current) {
+                                handledRef.current = true
+                                try {
+                                    controlsInner.stop()
+                                } catch {
+                                    // ignore
+                                }
+                                controlsRef.current = null
+                                scanQr(result.getText())
                             }
-                            controlsRef.current = null
-                            scanQr(result.getText())
-                        }
-                        if (resultError) {
-                            // zxing reports lots of "no code found" as errors; ignore
-                        }
-                    },
-                )
+                            if (resultError) {
+                                // zxing reports lots of "no code found" as errors; ignore
+                            }
+                        },
+                    )
 
-                if (!cancelled) {
-                    controlsRef.current = controls
-                } else {
-                    try {
-                        controls.stop()
-                    } catch {
-                        // ignore
+                    if (!cancelled) {
+                        controlsRef.current = controls
+                    } else {
+                        try {
+                            controls.stop()
+                        } catch {
+                            // ignore
+                        }
+                    }
+                } catch (e) {
+                    if (!cancelled) {
+                        setError(e?.message || 'Camera unavailable')
                     }
                 }
-            } catch (e) {
-                if (!cancelled) {
-                    setError(e?.message || 'Camera unavailable')
-                }
-            }
-        })()
+            })()
 
         return () => {
             cancelled = true
@@ -297,6 +299,18 @@ export default function ScanQrFab() {
 
                                 <div className="space-y-2">
                                     <div className="rounded-md border border-[#3d2e5c] bg-[#0f0a1a] px-3 py-2">
+                                        <div className="text-[11px] uppercase tracking-wider text-gray-500">Type</div>
+                                        <div className="text-sm text-gray-200">{asset.type || 'asset'}</div>
+                                    </div>
+                                    <div className="rounded-md border border-[#3d2e5c] bg-[#0f0a1a] px-3 py-2">
+                                        <div className="text-[11px] uppercase tracking-wider text-gray-500">Status</div>
+                                        <div className="text-sm text-gray-200">{asset.status || '—'}</div>
+                                    </div>
+                                    <div className="rounded-md border border-[#3d2e5c] bg-[#0f0a1a] px-3 py-2">
+                                        <div className="text-[11px] uppercase tracking-wider text-gray-500">Location</div>
+                                        <div className="text-sm text-gray-200">{asset.location || '—'}</div>
+                                    </div>
+                                    <div className="rounded-md border border-[#3d2e5c] bg-[#0f0a1a] px-3 py-2">
                                         <div className="text-[11px] uppercase tracking-wider text-gray-500">Description</div>
                                         <div className="text-sm text-gray-200">{asset.description || '—'}</div>
                                     </div>
@@ -307,7 +321,17 @@ export default function ScanQrFab() {
                         )}
                     </div>
 
-                    <DialogFooter className="pt-4">
+                    <DialogFooter className="pt-4 flex gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setPrintQRModalOpen(true)}
+                            disabled={!asset}
+                            className="gap-2"
+                        >
+                            <Printer size={16} />
+                            Print QR
+                        </Button>
                         <Button
                             type="button"
                             variant="secondary"
@@ -318,6 +342,13 @@ export default function ScanQrFab() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* Print QR Modal */}
+            <PrintQRModal
+                isOpen={printQRModalOpen}
+                onClose={() => setPrintQRModalOpen(false)}
+                item={asset}
+            />
         </>
     )
 }
