@@ -14,11 +14,30 @@ export const authApi = {
 export const assetApi = {
     listAssets: () => api.get('/assets'),
     getAssetByQr: (qrCode) => api.get(`/assets/qr/${encodeURIComponent(qrCode)}`),
-    createAsset: ({ type, qrCode, location, status, parentQrCode, imageData, description } = {}) =>
-        api.post('/assets', { type, qrCode, location, status, parentQrCode, imageData, description }),
+    createAsset: ({ type, qrCode, location, status, parentQrCode, imageFile, description } = {}) => {
+        const formData = new FormData()
+        formData.append('type', type)
+        if (qrCode) formData.append('qrCode', qrCode)
+        if (location) formData.append('location', location)
+        if (status) formData.append('status', status)
+        if (parentQrCode) formData.append('parentQrCode', parentQrCode)
+        if (imageFile) formData.append('image', imageFile)
+        if (description) formData.append('description', description)
+        return api.post('/assets', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        })
+    },
     scanAsset: (qrCode) => api.post('/assets/scan', { qrCode }),
-    upsertAssetMeta: ({ qrCode, type, imageData, description } = {}) =>
-        api.patch('/assets/meta', { qrCode, type, imageData, description }),
+    upsertAssetMeta: ({ qrCode, type, imageFile, description } = {}) => {
+        const formData = new FormData()
+        formData.append('qrCode', qrCode)
+        if (type) formData.append('type', type)
+        if (imageFile) formData.append('image', imageFile)
+        if (description) formData.append('description', description)
+        return api.patch('/assets/meta', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        })
+    },
     updateLocation: (qrCode, location) =>
         api.patch('/assets/location', { qrCode, location }),
     updateStatus: (qrCode, status) =>

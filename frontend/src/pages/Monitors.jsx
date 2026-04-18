@@ -547,9 +547,9 @@ function Monitors() {
                             {/* Left: Image/QR */}
                             <div className="flex flex-col gap-3">
                                 <div className="rounded-lg border border-[#3d2e5c] bg-[#0f0a1a] p-3">
-                                    {selectedMonitor?.imageData || selectedMonitor?.imageUrl ? (
+                                    {selectedMonitor?.imagePath || selectedMonitor?.imageUrl ? (
                                         <img
-                                            src={selectedMonitor.imageData || selectedMonitor.imageUrl}
+                                            src={selectedMonitor.imagePath || selectedMonitor.imageUrl}
                                             alt={selectedMonitor.deviceName || 'Monitor'}
                                             className="w-full h-48 rounded-md object-cover"
                                         />

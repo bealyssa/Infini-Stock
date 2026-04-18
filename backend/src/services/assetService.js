@@ -34,7 +34,7 @@ async function createAsset({
     location,
     status,
     parentQrCode,
-    imageData,
+    imagePath,
     description,
     userId,
 }) {
@@ -81,7 +81,7 @@ async function createAsset({
         location: normalizedLocation,
         parent,
         created_by: userId,
-        image_data: imageData || null,
+        image_path: imagePath || null,
         description: (description && String(description).trim()) || null,
     })
 
@@ -252,7 +252,7 @@ async function listActivityLogs({ limit = 100, userId, includeAll = false, filte
     return results
 }
 
-async function upsertAssetMeta({ qrCode, type, imageData, description, userId }) {
+async function upsertAssetMeta({ qrCode, type, imagePath, description, userId }) {
     const assetRepo = AppDataSource.getRepository('Asset')
 
     if (!qrCode) {
@@ -275,7 +275,7 @@ async function upsertAssetMeta({ qrCode, type, imageData, description, userId })
             location: 'Unassigned',
             status: 'active',
             parentQrCode: null,
-            imageData: imageData || null,
+            imagePath: imagePath || null,
             description: (description && String(description).trim()) || null,
             userId,
         })
@@ -284,7 +284,7 @@ async function upsertAssetMeta({ qrCode, type, imageData, description, userId })
         return { asset: created.asset }
     }
 
-    existing.image_data = imageData || null
+    existing.image_path = imagePath || null
     existing.description = (description && String(description).trim()) || null
     await assetRepo.save(existing)
 

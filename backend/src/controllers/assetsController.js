@@ -22,7 +22,6 @@ async function createAsset(req, res) {
             location,
             status,
             parentQrCode,
-            imageData,
             description,
         } = req.body || {}
 
@@ -32,9 +31,8 @@ async function createAsset(req, res) {
             return badRequest(res, 'Invalid type')
         }
 
-        if (imageData && typeof imageData !== 'string') {
-            return badRequest(res, 'imageData must be a base64 string')
-        }
+        // Get file path from multer if file was uploaded
+        const imagePath = req.file ? `/uploads/${req.file.filename}` : null
 
         const result = await assetService.createAsset({
             type,
@@ -42,7 +40,7 @@ async function createAsset(req, res) {
             location,
             status,
             parentQrCode,
-            imageData,
+            imagePath,
             description,
             userId: req.auth?.userId,
         })
@@ -61,7 +59,7 @@ async function createAsset(req, res) {
             location: asset.location,
             parentId: asset.parent?.id || null,
             parentQrCode: asset.parent?.qr_code || null,
-            imageData: asset.image_data || null,
+            imagePath: asset.image_path || null,
             description: asset.description || null,
             createdBy: asset.creator?.full_name || null,
             createdAt: asset.created_at,
@@ -85,7 +83,7 @@ async function scanAsset(req, res) {
             type: asset.type,
             status: asset.status,
             location: asset.location,
-            imageData: asset.image_data || null,
+            imagePath: asset.image_path || null,
             description: asset.description || null,
             parentId: asset.parent?.id || null,
             parentQrCode: asset.parent?.qr_code || null,
@@ -109,7 +107,7 @@ async function listAssets(req, res) {
                 type: asset.type,
                 status: asset.status,
                 location: asset.location,
-                imageData: asset.image_data || null,
+                imagePath: asset.image_path || null,
                 description: asset.description || null,
                 parentId: asset.parent?.id || null,
                 parentQrCode: asset.parent?.qr_code || null,
@@ -135,7 +133,7 @@ async function getAssetByQr(req, res) {
                 type: null,
                 status: null,
                 location: null,
-                imageData: null,
+                imagePath: null,
                 description: null,
                 parentId: null,
                 parentQrCode: null,
@@ -151,7 +149,7 @@ async function getAssetByQr(req, res) {
             type: asset.type,
             status: asset.status,
             location: asset.location,
-            imageData: asset.image_data || null,
+            imagePath: asset.image_path || null,
             description: asset.description || null,
             parentId: asset.parent?.id || null,
             parentQrCode: asset.parent?.qr_code || null,
@@ -165,12 +163,11 @@ async function getAssetByQr(req, res) {
 
 async function upsertAssetMeta(req, res) {
     try {
-        const { qrCode, type, imageData, description } = req.body || {}
+        const { qrCode, type, description } = req.body || {}
         if (!qrCode) return badRequest(res, 'qrCode is required')
 
-        if (imageData !== undefined && imageData !== null && typeof imageData !== 'string') {
-            return badRequest(res, 'imageData must be a base64 string or URL')
-        }
+        // Get file path from multer if file was uploaded
+        const imagePath = req.file ? `/uploads/${req.file.filename}` : null
 
         if (type !== undefined && type !== null) {
             const allowedTypes = ['unit', 'monitor']
@@ -190,7 +187,7 @@ async function upsertAssetMeta(req, res) {
         const result = await assetService.upsertAssetMeta({
             qrCode,
             type,
-            imageData: imageData || null,
+            imagePath,
             description,
             userId: req.auth?.userId,
         })
@@ -207,7 +204,7 @@ async function upsertAssetMeta(req, res) {
             type: asset.type,
             status: asset.status,
             location: asset.location,
-            imageData: asset.image_data || null,
+            imagePath: asset.image_path || null,
             description: asset.description || null,
             createdBy: asset.creator?.full_name || null,
             createdAt: asset.created_at,

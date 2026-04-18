@@ -52,7 +52,8 @@ export default function DeviceEditModal({
     })
 
     const [units, setUnits] = useState([])
-    const [imageData, setImageData] = useState(null)
+    const [imagePath, setImagePath] = useState(null)
+    const [imageFile, setImageFile] = useState(null)
     const [imageUrlInput, setImageUrlInput] = useState('')
 
     const [loadingMeta, setLoadingMeta] = useState(false)
@@ -86,7 +87,8 @@ export default function DeviceEditModal({
                 setLoadingMeta(true)
                 const { data } = await assetApi.getAssetByQr(device.qrCode)
                 if (cancelled) return
-                setImageData(data?.imageData || null)
+                setImagePath(data?.imagePath || null)
+                setImageFile(null)
 
                 if (!device.description && data?.description) {
                     setDraft((prev) => ({ ...prev, description: data.description }))
@@ -94,7 +96,8 @@ export default function DeviceEditModal({
             } catch (err) {
                 if (cancelled) return
                 if (err?.response?.status === 404) {
-                    setImageData(null)
+                    setImagePath(null)
+                    setImageFile(null)
                     return
                 }
                 setError(normalizeError(err))
@@ -139,8 +142,10 @@ export default function DeviceEditModal({
 
         try {
             setError(null)
-            const dataUrl = await fileToDataUrl(file)
-            setImageData(dataUrl)
+            setImageFile(file)
+            // Create preview URL
+            const url = URL.createObjectURL(file)
+            setImagePath(url)
         } catch (err) {
             setError(normalizeError(err))
         }
@@ -149,7 +154,8 @@ export default function DeviceEditModal({
     const handleUseImageUrl = () => {
         const next = imageUrlInput.trim()
         if (!next) return
-        setImageData(next)
+        setImagePath(next)
+        setImageFile(null)
         setImageUrlInput('')
     }
 
@@ -188,13 +194,13 @@ export default function DeviceEditModal({
             await assetApi.upsertAssetMeta({
                 qrCode: device.qrCode,
                 type,
-                imageData: imageData || null,
+                imageFile: imageFile || null,
                 description: payload.description,
             })
 
             const updatedDevice = {
                 ...(updated?.data || {}),
-                imageData: imageData || null,
+                imagePath: imagePath || null,
             }
 
             onSaved?.(updatedDevice)
@@ -233,12 +239,15 @@ export default function DeviceEditModal({
                                         {loadingMeta ? 'Loading current image…' : 'Upload or set a URL'}
                                     </div>
                                 </div>
-                                {imageData ? (
+                                {imagePath ? (
                                     <Button
                                         type="button"
                                         variant="outline"
                                         size="sm"
-                                        onClick={() => setImageData(null)}
+                                        onClick={() => {
+                                            setImagePath(null)
+                                            setImageFile(null)
+                                        }}
                                     >
                                         <Trash2 className="mr-2" size={16} />
                                         Remove
@@ -247,9 +256,9 @@ export default function DeviceEditModal({
                             </div>
 
                             <div className="rounded-lg border border-[#3d2e5c] bg-[#0f0a1a] p-3">
-                                {imageData ? (
+                                {imagePath ? (
                                     <img
-                                        src={imageData}
+                                        src={imagePath}
                                         alt={draft.deviceName || 'Device'}
                                         className="h-56 w-full rounded-md object-cover"
                                     />

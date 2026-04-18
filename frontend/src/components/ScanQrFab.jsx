@@ -284,9 +284,9 @@ export default function ScanQrFab() {
                         {asset ? (
                             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-[160px_1fr]">
                                 <div className="rounded-md border border-[#3d2e5c] bg-[#0f0a1a] p-2">
-                                    {asset.imageData ? (
+                                    {asset.imagePath ? (
                                         <img
-                                            src={asset.imageData}
+                                            src={asset.imagePath}
                                             alt={asset.qrCode}
                                             className="h-36 w-full rounded-md object-cover"
                                         />

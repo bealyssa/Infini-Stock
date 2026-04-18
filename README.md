@@ -38,6 +38,21 @@ Infini-Stock/
 
 ## 🚀 Quick Start
 
+### Run Backend + Frontend Together (Single Command)
+
+From the project root:
+
+```bash
+cd Infini-Stock
+npm install
+npm run install:all
+npm run dev
+```
+
+This starts both servers in one terminal:
+- Backend on `http://0.0.0.0:5000`
+- Frontend on `http://localhost:5173`
+
 ### Backend Setup
 
 1. **Install dependencies**

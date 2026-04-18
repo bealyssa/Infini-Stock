@@ -19,6 +19,8 @@ function Users() {
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [isEditMode, setIsEditMode] = useState(false)
     const [editingUserId, setEditingUserId] = useState(null)
+    const [currentUserId, setCurrentUserId] = useState(null)
+    const [searchQuery, setSearchQuery] = useState('')
 
     const [touched, setTouched] = useState({
         full_name: false,
@@ -102,12 +104,23 @@ function Users() {
     const ITEMS_PER_PAGE = 10
     const [currentPage, setCurrentPage] = useState(1)
 
+    // Filter users based on search query
+    const filteredUsers = users.filter((user) => {
+        const query = searchQuery.toLowerCase().trim()
+        if (!query) return true
+        return (
+            user.full_name.toLowerCase().includes(query) ||
+            user.email.toLowerCase().includes(query) ||
+            user.role.toLowerCase().includes(query)
+        )
+    })
+
     useEffect(() => {
         setCurrentPage(1)
-    }, [users.length])
+    }, [searchQuery, users.length])
 
-    const totalPages = Math.max(1, Math.ceil(users.length / ITEMS_PER_PAGE))
-    const pagedUsers = users.slice(
+    const totalPages = Math.max(1, Math.ceil(filteredUsers.length / ITEMS_PER_PAGE))
+    const pagedUsers = filteredUsers.slice(
         (currentPage - 1) * ITEMS_PER_PAGE,
         currentPage * ITEMS_PER_PAGE,
     )
@@ -132,6 +145,14 @@ function Users() {
 
     const handleBulkDelete = async () => {
         if (selectedUsers.size === 0) return
+        
+        // Check if current user is in the selection
+        if (selectedUsers.has(currentUserId)) {
+            setError('You cannot delete your own account')
+            setTimeout(() => setError(''), 3000)
+            return
+        }
+        
         if (!confirm(`Delete ${selectedUsers.size} user(s)? This cannot be undone.`)) return
 
         try {
@@ -155,6 +176,16 @@ function Users() {
     // Fetch users on mount
     useEffect(() => {
         fetchUsers()
+        // Get current user ID from localStorage
+        const userStr = localStorage.getItem('user')
+        if (userStr) {
+            try {
+                const user = JSON.parse(userStr)
+                setCurrentUserId(user.id)
+            } catch (err) {
+                console.error('Failed to parse user from localStorage:', err)
+            }
+        }
     }, [])
 
     const fetchUsers = async () => {
@@ -297,6 +328,12 @@ function Users() {
     }
 
     const handleDeleteUser = async (userId) => {
+        if (userId === currentUserId) {
+            setError('You cannot delete your own account')
+            setTimeout(() => setError(''), 3000)
+            return
+        }
+
         if (!window.confirm('Are you sure you want to delete this user?')) {
             return
         }
@@ -313,6 +350,12 @@ function Users() {
     }
 
     const handleToggleActive = async (userId, currentStatus) => {
+        if (userId === currentUserId) {
+            setError('You cannot deactivate your own account')
+            setTimeout(() => setError(''), 3000)
+            return
+        }
+        
         try {
             const response = await adminApi.updateUser(userId, { is_active: !currentStatus })
             setUsers(
@@ -334,34 +377,45 @@ function Users() {
 
     return (
         <div className="space-y-6 p-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold text-white">
-                        Manage Users
-                    </h1>
-                    <p className="text-gray-400 mt-1">
-                        {users.length} total users
-                    </p>
+            <div>
+                <div className="flex items-center justify-between mb-4">
+                    <div>
+                        <h1 className="text-3xl font-bold text-white">
+                            Manage Users
+                        </h1>
+                        <p className="text-gray-400 mt-1">
+                            {filteredUsers.length} of {users.length} users
+                        </p>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={handleBulkDelete}
+                            disabled={selectedUsers.size === 0}
+                            className="bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <Trash size={16} className="mr-2" />
+                            Delete {selectedUsers.size > 0 && `(${selectedUsers.size})`}
+                        </Button>
+                        <Button
+                            onClick={() => handleOpenDialog()}
+                            className="flex items-center gap-2"
+                        >
+                            <Plus size={20} />
+                            Add User
+                        </Button>
+                    </div>
                 </div>
-                <div className="flex gap-2">
-                    <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={handleBulkDelete}
-                        disabled={selectedUsers.size === 0}
-                        className="bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        <Trash size={16} className="mr-2" />
-                        Delete {selectedUsers.size > 0 && `(${selectedUsers.size})`}
-                    </Button>
-                    <Button
-                        onClick={() => handleOpenDialog()}
-                        className="flex items-center gap-2"
-                    >
-                        <Plus size={20} />
-                        Add User
-                    </Button>
-                </div>
+                
+                {/* Search Bar */}
+                <Input
+                    type="text"
+                    placeholder="Search by name, email, or role..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="bg-black/20 shadow-inner shadow-black/40"
+                />
             </div>
 
             {error && (
@@ -390,7 +444,7 @@ function Users() {
                         <Table>
                             <TableHeader>
                                 <TableRow className="hover:bg-transparent">
-                                    <TableHead className="px-6 py-3 text-left text-sm font-semibold text-lavender-200 w-12">
+                                    <TableHead className="px-3 sm:px-6 py-3 text-left text-sm font-semibold text-lavender-200 w-12">
                                         <input
                                             type="checkbox"
                                             checked={selectedUsers.size === pagedUsers.length && pagedUsers.length > 0}
@@ -398,11 +452,11 @@ function Users() {
                                             className="appearance-none w-4 h-4 border-2 border-[#3d2e5c] bg-[#0f0a1a] rounded cursor-pointer checked:bg-lavender-600 checked:border-lavender-600 checked:bg-[length:100%_100%] checked:[background-image:url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0id2hpdGUiPjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTE2LjcwNyA1LjI5M2ExIDEgMCAwIDEgMCAxLjQxNGwtOCA4YTEgMSAwIDAgMS0xLjQxNCAwbC00LTRhMSAxIDAgMCAxIDEuNDE0LTEuNDE0TDggMTIuNTg2bDcuMjkzLTcuMjkzYTEgMSAwIDAgMSAxLjQxNCAweiIgY2xpcC1ydWxlPSJldmVub2RkIi8+PC9zdmc+')] checked:bg-center checked:bg-no-repeat transition-colors"
                                         />
                                     </TableHead>
-                                    <TableHead className="px-6 py-3 text-left text-sm font-semibold text-lavender-200">Name</TableHead>
-                                    <TableHead className="px-6 py-3 text-left text-sm font-semibold text-lavender-200">Email</TableHead>
-                                    <TableHead className="px-6 py-3 text-left text-sm font-semibold text-lavender-200">Role</TableHead>
-                                    <TableHead className="px-6 py-3 text-left text-sm font-semibold text-lavender-200">Status</TableHead>
-                                    <TableHead className="px-6 py-3 text-left text-sm font-semibold text-lavender-200">Actions</TableHead>
+                                    <TableHead className="px-3 sm:px-6 py-3 text-left text-sm font-semibold text-lavender-200">Name</TableHead>
+                                    <TableHead className="px-3 sm:px-6 py-3 text-left text-sm font-semibold text-lavender-200">Email</TableHead>
+                                    <TableHead className="px-3 sm:px-6 py-3 text-left text-sm font-semibold text-lavender-200">Role</TableHead>
+                                    <TableHead className="px-3 sm:px-6 py-3 text-left text-sm font-semibold text-lavender-200">Status</TableHead>
+                                    <TableHead className="px-3 sm:px-6 py-3 text-left text-sm font-semibold text-lavender-200">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -411,7 +465,7 @@ function Users() {
                                         onClick={() => openDetails(user)}
                                         className="hover:bg-white/5 transition-colors cursor-pointer"
                                     >
-                                        <TableCell className="px-6 py-3" onClick={(e) => e.stopPropagation()}>
+                                        <TableCell className="px-3 sm:px-6 py-3" onClick={(e) => e.stopPropagation()}>
                                             <input
                                                 type="checkbox"
                                                 checked={selectedUsers.has(user._id)}
@@ -419,21 +473,27 @@ function Users() {
                                                 className="appearance-none w-4 h-4 border-2 border-[#3d2e5c] bg-[#0f0a1a] rounded cursor-pointer checked:bg-lavender-600 checked:border-lavender-600 checked:bg-[length:100%_100%] checked:[background-image:url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0id2hpdGUiPjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTE2LjcwNyA1LjI5M2ExIDEgMCAwIDEgMCAxLjQxNGwtOCA4YTEgMSAwIDAgMS0xLjQxNCAwbC00LTRhMSAxIDAgMCAxIDEuNDE0LTEuNDE0TDggMTIuNTg2bDcuMjkzLTcuMjkzYTEgMSAwIDAgMSAxLjQxNCAweiIgY2xpcC1ydWxlPSJldmVub2RkIi8+PC9zdmc+')] checked:bg-center checked:bg-no-repeat transition-colors"
                                             />
                                         </TableCell>
-                                        <TableCell className="px-6 py-3 text-gray-100">
+                                        <TableCell className="px-3 sm:px-6 py-3 text-gray-100">
                                             <div className="font-medium text-white">{user.full_name}</div>
                                         </TableCell>
-                                        <TableCell className="px-6 py-3 text-gray-300">
+                                        <TableCell className="px-3 sm:px-6 py-3 text-gray-300">
                                             {user.email}
                                         </TableCell>
-                                        <TableCell className="px-6 py-3">
+                                        <TableCell className="px-3 sm:px-6 py-3">
                                             <Badge variant={getRoleVariant(user.role)}>
                                                 {formatRole(user.role)}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell className="px-6 py-3">
+                                        <TableCell className="px-3 sm:px-6 py-3">
                                             <button
                                                 onClick={() => handleToggleActive(user.id, user.is_active)}
-                                                className="flex items-center gap-2 text-gray-300 hover:text-gray-100 transition"
+                                                disabled={user.id === currentUserId}
+                                                className={`flex items-center gap-2 transition ${
+                                                    user.id === currentUserId
+                                                        ? 'text-gray-500 cursor-not-allowed opacity-50'
+                                                        : 'text-gray-300 hover:text-gray-100'
+                                                }`}
+                                                title={user.id === currentUserId ? 'You cannot deactivate your own account' : ''}
                                             >
                                                 {user.is_active ? (
                                                     <>
@@ -448,7 +508,7 @@ function Users() {
                                                 )}
                                             </button>
                                         </TableCell>
-                                        <TableCell className="px-6 py-3">
+                                        <TableCell className="px-3 sm:px-6 py-3">
                                             <div className="flex items-center gap-2">
                                                 <button
                                                     onClick={() => handleOpenDialog(user)}
@@ -459,8 +519,13 @@ function Users() {
                                                 </button>
                                                 <button
                                                     onClick={() => handleDeleteUser(user.id)}
-                                                    className="p-2 rounded-lg hover:bg-red-900/20 text-gray-400 hover:text-red-400 transition"
-                                                    title="Delete user"
+                                                    disabled={user.id === currentUserId}
+                                                    className={`p-2 rounded-lg transition ${
+                                                        user.id === currentUserId
+                                                            ? 'text-gray-600 cursor-not-allowed opacity-50'
+                                                            : 'text-gray-400 hover:text-red-400 hover:bg-red-900/20'
+                                                    }`}
+                                                    title={user.id === currentUserId ? 'You cannot delete your own account' : 'Delete user'}
                                                 >
                                                     <Trash2 size={18} />
                                                 </button>
@@ -476,7 +541,7 @@ function Users() {
             </Card>
 
             <div className="mt-6">
-                <div className="px-5 py-4">
+                <div className="px-3 sm:px-5 py-4">
                     <TablePagination
                         align="end"
                         currentPage={currentPage}

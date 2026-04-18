@@ -43,8 +43,9 @@ module.exports = new EntitySchema({
             type: 'uuid',
             nullable: false,
         },
-        image_data: {
-            type: 'text',
+        image_path: {
+            type: 'varchar',
+            length: 255,
             nullable: true,
         },
         description: {

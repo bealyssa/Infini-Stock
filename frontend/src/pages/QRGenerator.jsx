@@ -69,7 +69,7 @@ function QRGenerator() {
             const { data } = await assetApi.createAsset({
                 type: formData.type,
                 qrCode: qrCode ? qrCode : undefined,
-                imageData: imagePreview,
+                imageFile: imageFile || undefined,
                 description: formData.description.trim() || undefined,
             })
             setCreatedAsset(data)
@@ -251,10 +251,10 @@ function QRGenerator() {
                                                 </div>
 
                                                 <div className="space-y-3">
-                                                    {createdAsset.imageData ? (
+                                                    {createdAsset.imagePath ? (
                                                         <div className="rounded-lg overflow-hidden border border-white/10 h-44 w-full bg-black/20">
                                                             <img
-                                                                src={createdAsset.imageData}
+                                                                src={createdAsset.imagePath}
                                                                 alt="Asset"
                                                                 className="w-full h-full object-cover"
                                                             />

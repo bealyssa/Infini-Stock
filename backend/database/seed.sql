@@ -7,7 +7,7 @@
 -- monitor_assignments, asset_movements, asset_status_history, activity_logs
 
 -- Primary sample users:
--- amara.santos@infini-stock.com / admin123
+-- amara.santos@infini-stock.com /  admin123                  
 -- james.carter@infini-stock.com / manager123
 -- miguel.torres@infini-stock.com / tech123
 -- john.reyes@infini-stock.com / staff123
@@ -17,7 +17,7 @@
 -- LOC-HQ-NOC-01, LOC-HQ-IT-02, LOC-WH-REC-03, LOC-BR-SUP-04
 
 -- Sample system units:
--- UNIT-HQ-001, UNIT-HQ-002, UNIT-WH-003
+-- UNIT-HQ-001, UNIT-HQ-002, UNIT-WH-0032
 
 -- Sample monitors:
 -- MON-HQ-001, MON-HQ-002, MON-HQ-003, MON-WH-004

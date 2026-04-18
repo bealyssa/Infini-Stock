@@ -30,6 +30,7 @@ import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
 import { ChangeDetailsModal } from '../components/ActionModals'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table'
+import { Input } from '../components/ui/Input'
 import FullPageLoader from '../components/FullPageLoader'
 import TablePagination from '../components/TablePagination'
 
@@ -153,10 +154,32 @@ function Dashboard() {
 
     const LOG_PAGE_SIZE = 5
     const [logPage, setLogPage] = useState(0)
+    const [logFilter, setLogFilter] = useState('')
 
     const filteredLogs = useMemo(() => {
-        return logs || []
-    }, [logs])
+        const query = (logFilter || '').toLowerCase().trim()
+        if (!query) return logs || []
+
+        return (logs || []).filter((log) => {
+            const parts = [
+                log?.userName,
+                log?.action,
+                log?.assetQrCode,
+                log?.monitor?.qr_code,
+                log?.unit?.qr_code,
+                log?.description,
+                log?.oldStatus,
+                log?.newStatus,
+                log?.oldLocation,
+                log?.newLocation,
+            ]
+                .filter(Boolean)
+                .join(' ')
+                .toLowerCase()
+
+            return parts.includes(query)
+        })
+    }, [logs, logFilter])
 
     useEffect(() => {
         setLogPage(0)
@@ -551,15 +574,23 @@ function Dashboard() {
                             ) : error ? (
                                 <p className="py-6 text-red-400 text-sm px-5">⚠️ {error}</p>
                             ) : filteredLogs.length > 0 ? (
-                                <div className="overflow-x-auto">
+                                <div>
+                                    <div className="px-5 pb-3">
+                                        <Input
+                                            value={logFilter}
+                                            onChange={(e) => setLogFilter(e.target.value)}
+                                            placeholder="Search activity logs…"
+                                            className="w-full"
+                                        />
+                                    </div>
                                     <Table>
                                         <TableHeader>
                                             <TableRow className="hover:bg-transparent">
-                                                <TableHead className="px-5 py-2 text-[10px] font-semibold uppercase text-gray-400">Name</TableHead>
-                                                <TableHead className="px-5 py-2 text-[10px] font-semibold uppercase text-gray-400">Timestamp</TableHead>
-                                                <TableHead className="px-5 py-2 text-[10px] font-semibold uppercase text-gray-400">Action</TableHead>
-                                                <TableHead className="px-5 py-2 text-[10px] font-semibold uppercase text-gray-400">Item</TableHead>
-                                                <TableHead className="px-5 py-2 text-[10px] font-semibold uppercase text-gray-400">Details</TableHead>
+                                                <TableHead className="px-3 sm:px-5 py-2 text-[10px] font-semibold uppercase text-gray-400">Name</TableHead>
+                                                <TableHead className="px-3 sm:px-5 py-2 text-[10px] font-semibold uppercase text-gray-400">Timestamp</TableHead>
+                                                <TableHead className="px-3 sm:px-5 py-2 text-[10px] font-semibold uppercase text-gray-400">Action</TableHead>
+                                                <TableHead className="px-3 sm:px-5 py-2 text-[10px] font-semibold uppercase text-gray-400">Item</TableHead>
+                                                <TableHead className="px-3 sm:px-5 py-2 text-[10px] font-semibold uppercase text-gray-400">Details</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -586,27 +617,27 @@ function Dashboard() {
 
                                                 return (
                                                     <TableRow key={log.id}>
-                                                        <TableCell className="px-5 py-3 text-xs text-gray-300">
+                                                        <TableCell className="px-3 sm:px-5 py-3 text-xs text-gray-300">
                                                             {log.userName || '—'}
                                                         </TableCell>
-                                                        <TableCell className="px-5 py-3 text-xs text-gray-400">
+                                                        <TableCell className="px-3 sm:px-5 py-3 text-xs text-gray-400">
                                                             {new Date(log.timestamp).toLocaleTimeString(undefined, {
                                                                 hour: '2-digit',
                                                                 minute: '2-digit',
                                                                 second: '2-digit',
                                                             })}
                                                         </TableCell>
-                                                        <TableCell className="px-5 py-3">
+                                                        <TableCell className="px-3 sm:px-5 py-3">
                                                             <Badge className="bg-lavender-600/20 text-lavender-300 text-xs border border-lavender-600/40">
                                                                 {log.action}
                                                             </Badge>
                                                         </TableCell>
-                                                        <TableCell className="px-5 py-3">
+                                                        <TableCell className="px-3 sm:px-5 py-3">
                                                             <code className="text-xs bg-dark-700 text-lavender-300 px-2.5 py-1 rounded border border-border-dark font-mono">
                                                                 {itemDisplay}
                                                             </code>
                                                         </TableCell>
-                                                        <TableCell className="px-5 py-3 text-gray-400 text-xs">
+                                                        <TableCell className="px-3 sm:px-5 py-3 text-gray-400 text-xs">
                                                             <div className="flex items-center justify-between gap-2">
                                                                 <span className="truncate max-w-xs" title={detailsDisplay}>
                                                                     {detailsDisplay.length > 50 ? `${detailsDisplay.substring(0, 50)}...` : detailsDisplay}

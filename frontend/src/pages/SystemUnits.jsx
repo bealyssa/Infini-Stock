@@ -583,9 +583,9 @@ function SystemUnits() {
                             {/* Left: Image/QR */}
                             <div className="flex flex-col gap-3">
                                 <div className="rounded-lg border border-[#3d2e5c] bg-[#0f0a1a] p-3">
-                                    {selectedUnit?.imageData || selectedUnit?.imageUrl ? (
+                                    {selectedUnit?.imagePath || selectedUnit?.imageUrl ? (
                                         <img
-                                            src={selectedUnit.imageData || selectedUnit.imageUrl}
+                                            src={selectedUnit.imagePath || selectedUnit.imageUrl}
                                             alt={selectedUnit.deviceName || 'System unit'}
                                             className="w-full h-48 rounded-md object-cover"
                                         />

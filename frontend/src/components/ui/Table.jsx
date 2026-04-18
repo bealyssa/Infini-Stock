@@ -2,7 +2,7 @@ import { forwardRef } from 'react'
 import { cn } from '../../lib/utils'
 
 const Table = forwardRef(({ className, ...props }, ref) => (
-    <div className="w-full overflow-visible rounded-lg">
+    <div className="w-full overflow-x-auto overflow-y-visible rounded-lg">
         <table
             ref={ref}
             className={cn('w-full caption-bottom text-sm', className)}
@@ -58,7 +58,7 @@ const TableHead = forwardRef(({ className, ...props }, ref) => (
     <th
         ref={ref}
         className={cn(
-            'h-12 px-6 py-3 text-left align-middle text-xs font-semibold uppercase tracking-wider text-gray-300 first:pl-8 last:pr-8 [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
+            'h-10 sm:h-12 px-3 sm:px-6 py-2 sm:py-3 text-left align-middle text-xs font-semibold uppercase tracking-wider text-gray-300 first:pl-4 sm:first:pl-8 last:pr-4 sm:last:pr-8 [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
             className,
         )}
         {...props}
@@ -70,7 +70,7 @@ const TableCell = forwardRef(({ className, ...props }, ref) => (
     <td
         ref={ref}
         className={cn(
-            'px-6 py-4 align-middle text-gray-100 first:pl-8 last:pr-8 [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
+            'px-3 sm:px-6 py-2 sm:py-4 align-middle text-gray-100 first:pl-4 sm:first:pl-8 last:pr-4 sm:last:pr-8 [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]',
             className,
         )}
         {...props}
