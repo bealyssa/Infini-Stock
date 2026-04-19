@@ -1,4 +1,4 @@
-import { BarChart3, Package, Monitor, QrCode, Activity, Users, Menu, X, Zap, LogOut } from 'lucide-react'
+import { BarChart3, Package, Monitor, Activity, Users, Menu, X, Zap, LogOut } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, useDialog } from './ui/Dialog'
@@ -10,6 +10,10 @@ function Sidebar() {
     const navigate = useNavigate()
     const logoutDialog = useDialog()
 
+    // Get user role from localStorage
+    const user = JSON.parse(localStorage.getItem('user') || '{}')
+    const userRole = user?.role
+
     const menuGroups = [
         {
             title: 'Overview',
@@ -20,16 +24,18 @@ function Sidebar() {
             items: [
                 { path: '/units', label: 'System Units', icon: Package },
                 { path: '/monitors', label: 'Monitors', icon: Monitor },
-                { path: '/qr-generator', label: 'QR Generator', icon: QrCode },
             ],
         },
-        {
+        // Account Management - hidden entirely for staff and viewer
+        ...(userRole !== 'staff' && userRole !== 'viewer' ? [{
             title: 'Account Management',
             items: [
-                { path: '/logs', label: 'Activity Logs', icon: Activity },
-                { path: '/admin/users', label: 'Manage Users', icon: Users },
+                // Activity Logs - hidden for staff and viewer (view-only roles)
+                ...(userRole !== 'staff' && userRole !== 'viewer' ? [{ path: '/logs', label: 'Activity Logs', icon: Activity }] : []),
+                // Show "Manage Users" for admin and manager roles
+                ...(userRole === 'admin' || userRole === 'manager' ? [{ path: '/admin/users', label: 'Manage Users', icon: Users }] : []),
             ],
-        },
+        }] : []),
     ]
 
     const isActive = (path) => location.pathname === path

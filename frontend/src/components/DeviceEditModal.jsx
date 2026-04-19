@@ -1,4 +1,4 @@
-import { Image as ImageIcon, Trash2, Upload } from 'lucide-react'
+import { Image as ImageIcon, Info, Trash2, Upload } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { assetApi, monitorApi, unitApi } from '../api'
 import { Button } from './ui/Button'
@@ -17,6 +17,24 @@ function normalizeError(err) {
     return err?.response?.data?.message || err?.message || 'Something went wrong'
 }
 
+// Image upload requirements
+const IMAGE_REQUIREMENTS = {
+    maxFileSize: 5 * 1024 * 1024, // 5MB
+    minFileSize: 10 * 1024, // 10KB
+    allowedFormats: ['image/jpeg', 'image/png'],
+    allowedExtensions: ['.jpg', '.jpeg', '.png'],
+    minDimensions: { width: 400, height: 300 },
+    maxDimensions: { width: 4000, height: 3000 },
+}
+
+const getImageRequirementsText = () => `
+Max Size: 5MB
+Min Size: 10KB
+Formats: JPG, PNG, WebP
+Min Dimensions: 400×300px
+Max Dimensions: 4000×3000px
+`.trim()
+
 function fileToDataUrl(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader()
@@ -32,6 +50,7 @@ export default function DeviceEditModal({
     type,
     device,
     onSaved,
+    onNotify, // Toast callback function
 }) {
     const isUnit = type === 'unit'
     const isMonitor = type === 'monitor'
@@ -48,12 +67,18 @@ export default function DeviceEditModal({
         status: 'active',
         location: '',
         linkedUnitId: '',
+        condition: '',
+        modelType: '',
+        serialNumber: '',
         description: '',
+        notes: '',
     })
 
     const [units, setUnits] = useState([])
     const [imageData, setImageData] = useState(null)
+    const [originalImageData, setOriginalImageData] = useState(null)
     const [imageUrlInput, setImageUrlInput] = useState('')
+    const [showValidationErrors, setShowValidationErrors] = useState(false)
 
     const [loadingMeta, setLoadingMeta] = useState(false)
     const [saving, setSaving] = useState(false)
@@ -72,7 +97,11 @@ export default function DeviceEditModal({
             status: device.status || 'active',
             location: device.location || '',
             linkedUnitId: device.linkedUnit?.id || '',
+            condition: device.condition || '',
+            modelType: device.modelType || '',
+            serialNumber: device.serialNumber || '',
             description: device.description || '',
+            notes: device.notes || '',
         })
 
         setImageUrlInput('')
@@ -86,7 +115,9 @@ export default function DeviceEditModal({
                 setLoadingMeta(true)
                 const { data } = await assetApi.getAssetByQr(device.qrCode)
                 if (cancelled) return
-                setImageData(data?.imageData || null)
+                const img = data?.imageData || null
+                setImageData(img)
+                setOriginalImageData(img)
 
                 if (!device.description && data?.description) {
                     setDraft((prev) => ({ ...prev, description: data.description }))
@@ -95,6 +126,7 @@ export default function DeviceEditModal({
                 if (cancelled) return
                 if (err?.response?.status === 404) {
                     setImageData(null)
+                    setOriginalImageData(null)
                     return
                 }
                 setError(normalizeError(err))
@@ -127,22 +159,95 @@ export default function DeviceEditModal({
         setDraft((prev) => ({ ...prev, [name]: value }))
     }
 
+    const isEditFormValid = () => {
+        return (
+            draft.deviceName.trim() !== '' &&
+            draft.status.trim() !== '' &&
+            draft.condition.trim() !== ''
+        )
+    }
+
+    const validateImageRequirements = (file) => {
+        const errors = []
+
+        // Check file size
+        if (file.size > IMAGE_REQUIREMENTS.maxFileSize) {
+            errors.push(`File too large. Max size is 5MB (current: ${(file.size / 1024 / 1024).toFixed(2)}MB)`)
+        }
+        if (file.size < IMAGE_REQUIREMENTS.minFileSize) {
+            errors.push(`File too small. Min size is 10KB (current: ${(file.size / 1024).toFixed(2)}KB)`)
+        }
+
+        // Check file type
+        if (!IMAGE_REQUIREMENTS.allowedFormats.includes(file.type)) {
+            errors.push(`Invalid file format. Allowed: JPG, PNG, WebP (current: ${file.type || 'unknown'})`)
+        }
+
+        return errors
+    }
+
+    const validateImageDimensions = (img) => {
+        return new Promise((resolve) => {
+            const errors = []
+
+            if (img.width < IMAGE_REQUIREMENTS.minDimensions.width || img.height < IMAGE_REQUIREMENTS.minDimensions.height) {
+                errors.push(`Image too small. Min dimensions are 400×300px (current: ${img.width}×${img.height}px)`)
+            }
+            if (img.width > IMAGE_REQUIREMENTS.maxDimensions.width || img.height > IMAGE_REQUIREMENTS.maxDimensions.height) {
+                errors.push(`Image too large. Max dimensions are 4000×3000px (current: ${img.width}×${img.height}px)`)
+            }
+
+            resolve(errors)
+        })
+    }
+
     const handleImageFileChange = async (e) => {
         const file = e.target.files?.[0]
         if (!file) return
 
-        const maxSize = 5 * 1024 * 1024
-        if (file.size > maxSize) {
-            setError('Image size must be less than 5MB')
+        // Validate file requirements
+        const fileErrors = validateImageRequirements(file)
+        if (fileErrors.length > 0) {
+            fileErrors.forEach(err => {
+                onNotify?.(err, 'error')
+            })
+            setError(fileErrors[0])
+            e.target.value = '' // Clear input
             return
         }
 
         try {
             setError(null)
             const dataUrl = await fileToDataUrl(file)
-            setImageData(dataUrl)
+
+            // Validate dimensions
+            const img = new window.Image()
+            img.onload = async () => {
+                const dimensionErrors = await validateImageDimensions(img)
+                if (dimensionErrors.length > 0) {
+                    dimensionErrors.forEach(err => {
+                        onNotify?.(err, 'error')
+                    })
+                    setError(dimensionErrors[0])
+                    e.target.value = ''
+                    return
+                }
+
+                setImageData(dataUrl)
+                onNotify?.('Image uploaded successfully', 'success')
+            }
+            img.onerror = () => {
+                const err = 'Failed to load image. Please try another file.'
+                onNotify?.(err, 'error')
+                setError(err)
+                e.target.value = ''
+            }
+            img.src = dataUrl
         } catch (err) {
-            setError(normalizeError(err))
+            const message = normalizeError(err)
+            onNotify?.(message, 'error')
+            setError(message)
+            e.target.value = ''
         }
     }
 
@@ -157,20 +262,37 @@ export default function DeviceEditModal({
         e.preventDefault()
         if (!device?.id) return
 
+        // Validate required fields
+        if (!isEditFormValid()) {
+            setShowValidationErrors(true)
+            setError('Device name, Status, and Condition are required')
+            return
+        }
+
         setError(null)
 
         const payload = {
             deviceName: draft.deviceName.trim(),
             status: draft.status,
             description: draft.description,
+            notes: draft.notes,
+        }
+
+        // Only include imageData if it has been changed
+        if (imageData !== originalImageData) {
+            payload.imageData = imageData
         }
 
         if (isUnit) {
             payload.location = draft.location
+            payload.condition = draft.condition
+            payload.modelType = draft.modelType
+            payload.serialNumber = draft.serialNumber
         }
 
         if (isMonitor) {
             payload.linkedUnitId = draft.linkedUnitId || null
+            payload.condition = draft.condition
         }
 
         if (!payload.deviceName) {
@@ -184,13 +306,6 @@ export default function DeviceEditModal({
             const updated = isUnit
                 ? await unitApi.updateUnit(device.id, payload)
                 : await monitorApi.updateMonitor(device.id, payload)
-
-            await assetApi.upsertAssetMeta({
-                qrCode: device.qrCode,
-                type,
-                imageData: imageData || null,
-                description: payload.description,
-            })
 
             const updatedDevice = {
                 ...(updated?.data || {}),
@@ -265,13 +380,29 @@ export default function DeviceEditModal({
 
                             <div className="grid grid-cols-1 gap-3">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                                        Upload image
-                                    </label>
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <label className="block text-sm font-medium text-gray-300">
+                                            Upload image
+                                        </label>
+                                        <div className="relative group">
+                                            <Info size={16} className="text-gray-400 cursor-help hover:text-gray-200 transition" />
+                                            <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-full -mt-2 hidden group-hover:block bg-gray-900 border border-gray-700 rounded-lg p-3 w-64 text-xs text-gray-300 shadow-lg z-50 pointer-events-none">
+                                                <div className="font-semibold mb-2 text-gray-200">Image Requirements:</div>
+                                                <div className="space-y-1">
+                                                    <div>• Max Size: 5MB</div>
+                                                    <div>• Min Size: 10KB</div>
+                                                    <div>• Formats: JPG, PNG</div>
+                                                    <div>• Min Dimensions: 400×300px</div>
+                                                    <div>• Max Dimensions: 4000×3000px</div>
+                                                </div>
+                                                <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-4 border-transparent border-t-gray-900 border-t-4"></div>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <div className="flex items-center gap-3">
                                         <Input
                                             type="file"
-                                            accept="image/*"
+                                            accept=".jpg,.jpeg,.png"
                                             onChange={handleImageFileChange}
                                         />
                                         <div className="hidden sm:flex items-center text-xs text-gray-500">
@@ -281,26 +412,20 @@ export default function DeviceEditModal({
                                     </div>
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                                        Or image URL
-                                    </label>
-                                    <div className="flex gap-2">
-                                        <Input
-                                            value={imageUrlInput}
-                                            onChange={(e) => setImageUrlInput(e.target.value)}
-                                            placeholder="https://…"
-                                        />
-                                        <Button
-                                            type="button"
-                                            variant="secondary"
-                                            onClick={handleUseImageUrl}
-                                            disabled={!imageUrlInput.trim()}
-                                        >
-                                            Use
-                                        </Button>
-                                    </div>
-                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-1">
+                                    Notes
+                                </label>
+                                <textarea
+                                    name="notes"
+                                    value={draft.notes}
+                                    onChange={handleChange}
+                                    placeholder="Add additional notes…"
+                                    rows={3}
+                                    className="w-full rounded-md border border-[#3d2e5c] bg-[#0f0a1a] px-3 py-2 text-sm text-gray-200 placeholder:text-gray-500 outline-none focus:border-lavender-500 focus:ring-2 focus:ring-lavender-500/20"
+                                />
                             </div>
                         </div>
 
@@ -308,13 +433,14 @@ export default function DeviceEditModal({
                         <div className="space-y-2">
                             <div>
                                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                                    Device Name
+                                    Device Name <span className="text-red-500">*</span>
                                 </label>
                                 <Input
                                     name="deviceName"
                                     value={draft.deviceName}
                                     onChange={handleChange}
                                     placeholder="e.g., System Unit #1"
+                                    className={showValidationErrors && !draft.deviceName.trim() ? 'border-red-500 border-2' : ''}
                                     required
                                 />
                             </div>
@@ -328,47 +454,99 @@ export default function DeviceEditModal({
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                                    Status
+                                    Status <span className="text-red-500">*</span>
                                 </label>
-                                <Select name="status" value={draft.status} onChange={handleChange}>
+                                <Select name="status" value={draft.status} onChange={handleChange} className={showValidationErrors && !draft.status.trim() ? 'border-red-500 border-2' : ''}>
                                     <option value="active">Active</option>
                                     <option value="inactive">Inactive</option>
                                     <option value="maintenance">Maintenance</option>
+                                    <option value="broken">Broken</option>
+                                    <option value="repair">Repair</option>
                                 </Select>
                             </div>
 
                             {isUnit ? (
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-1">
-                                        Location
-                                    </label>
-                                    <Input
-                                        name="location"
-                                        value={draft.location}
-                                        onChange={handleChange}
-                                        placeholder="e.g., Building A, Floor 3"
-                                    />
-                                </div>
+                                <>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-300 mb-1">
+                                            Location
+                                        </label>
+                                        <Input
+                                            name="location"
+                                            value={draft.location}
+                                            onChange={handleChange}
+                                            placeholder="e.g., Building A, Floor 3"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-300 mb-1">
+                                            Condition <span className="text-red-500">*</span>
+                                        </label>
+                                        <Select name="condition" value={draft.condition} onChange={handleChange} className={showValidationErrors && !draft.condition.trim() ? 'border-red-500 border-2' : ''}>
+                                            <option value="">Select condition…</option>
+                                            <option value="new">New</option>
+                                            <option value="good">Good</option>
+                                            <option value="fair">Fair</option>
+                                            <option value="poor">Poor</option>
+                                        </Select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-300 mb-1">
+                                            Model Type
+                                        </label>
+                                        <Input
+                                            name="modelType"
+                                            value={draft.modelType}
+                                            onChange={handleChange}
+                                            placeholder="e.g., Receiver TR-100"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-300 mb-1">
+                                            Serial Number
+                                        </label>
+                                        <Input
+                                            name="serialNumber"
+                                            value={draft.serialNumber}
+                                            onChange={handleChange}
+                                            placeholder="e.g., SN123456789"
+                                        />
+                                    </div>
+                                </>
                             ) : null}
 
                             {isMonitor ? (
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-300 mb-1">
-                                        Linked System Unit
-                                    </label>
-                                    <Select
-                                        name="linkedUnitId"
-                                        value={draft.linkedUnitId}
-                                        onChange={handleChange}
-                                    >
-                                        <option value="">None</option>
-                                        {units.map((unit) => (
-                                            <option key={unit.id} value={unit.id}>
-                                                {unit.deviceName} ({unit.qrCode})
-                                            </option>
-                                        ))}
-                                    </Select>
-                                </div>
+                                <>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-300 mb-1">
+                                            Linked System Unit
+                                        </label>
+                                        <Select
+                                            name="linkedUnitId"
+                                            value={draft.linkedUnitId}
+                                            onChange={handleChange}
+                                        >
+                                            <option value="">None</option>
+                                            {units.map((unit) => (
+                                                <option key={unit.id} value={unit.id}>
+                                                    {unit.deviceName} ({unit.qrCode})
+                                                </option>
+                                            ))}
+                                        </Select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-300 mb-1">
+                                            Condition <span className="text-red-500">*</span>
+                                        </label>
+                                        <Select name="condition" value={draft.condition} onChange={handleChange} className={showValidationErrors && !draft.condition.trim() ? 'border-red-500 border-2' : ''}>
+                                            <option value="">Select condition…</option>
+                                            <option value="new">New</option>
+                                            <option value="good">Good</option>
+                                            <option value="fair">Fair</option>
+                                            <option value="poor">Poor</option>
+                                        </Select>
+                                    </div>
+                                </>
                             ) : null}
 
                             <div>
@@ -396,7 +574,11 @@ export default function DeviceEditModal({
                         >
                             Cancel
                         </Button>
-                        <Button type="submit" disabled={saving}>
+                        <Button
+                            type="submit"
+                            disabled={saving || !isEditFormValid()}
+                            className={!isEditFormValid() ? 'opacity-50 cursor-not-allowed' : ''}
+                        >
                             {saving ? 'Saving…' : 'Save Changes'}
                         </Button>
                     </DialogFooter>

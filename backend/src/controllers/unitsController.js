@@ -3,71 +3,80 @@ const { ok, serverError } = require('../utils/http')
 
 async function createUnit(req, res) {
     try {
-        const { deviceName, qrCode, status = 'active', location, description } = req.body
+        const { deviceName, qrCode, status = 'active', location, condition = 'good', description, modelType, serialNumber, notes, imageData } = req.body
 
         if (!deviceName || !qrCode) {
             return res.status(400).json({ message: 'deviceName and qrCode are required' })
         }
 
-        const unitRepo = AppDataSource.getRepository('Unit')
+        const assetRepo = AppDataSource.getRepository('Asset')
         const activityRepo = AppDataSource.getRepository('ActivityLog')
 
-        const existing = await unitRepo.findOne({ where: { qr_code: qrCode } })
+        const existing = await assetRepo.findOne({ where: { qr_code: qrCode } })
         if (existing) {
             return res.status(409).json({ message: 'QR code already exists' })
         }
 
-        const unit = unitRepo.create({
-            device_name: deviceName,
+        const unit = assetRepo.create({
             qr_code: qrCode,
+            type: 'unit',
             status,
-            location: location || null,
+            location: location || 'Unassigned',
+            condition: condition || 'good',
+            model_type: modelType || null,
+            serial_number: serialNumber || null,
+            image_data: imageData || null,
             description: description || null,
+            notes: notes || null,
             created_by: req.auth.userId,
         })
 
-        const saved = await unitRepo.save(unit)
+        const saved = await assetRepo.save(unit)
 
         // Log activity
         await activityRepo.save(
             activityRepo.create({
                 action: 'created',
-                unit_id: saved.id,
+                asset_id: saved.id,
                 user_id: req.auth.userId,
                 description: `Created unit "${deviceName}" (${qrCode}) with status: ${status}${location ? ` at ${location}` : ''}`,
+                item_name: deviceName,
+                item_qr: qrCode,
             })
         )
 
-        const withRelations = await unitRepo.findOne({
+        const withRelations = await assetRepo.findOne({
             where: { id: saved.id },
-            relations: { creator: true, monitors: true },
+            relations: { creator: true },
         })
 
         return ok(res, {
             id: withRelations.id,
-            deviceName: withRelations.device_name,
+            deviceName: deviceName,
             qrCode: withRelations.qr_code,
             status: withRelations.status,
+            condition: withRelations.condition,
             location: withRelations.location,
-            description: withRelations.description,
             modelType: withRelations.model_type,
             serialNumber: withRelations.serial_number,
-            condition: withRelations.condition || 'good',
+            imageData: withRelations.image_data,
+            description: withRelations.description,
             notes: withRelations.notes,
             createdBy: withRelations.creator?.full_name || null,
-            monitorCount: withRelations.monitors?.length || 0,
             createdAt: withRelations.created_at,
         })
-    } catch {
+    } catch (error) {
+        console.error('Create unit error:', error)
         return serverError(res, 'Failed to create system unit')
     }
 }
 
 async function listUnits(req, res) {
     try {
-        const unitRepo = AppDataSource.getRepository('Unit')
-        const units = await unitRepo.find({
-            relations: { creator: true, monitors: true },
+        const assetRepo = AppDataSource.getRepository('Asset')
+        const units = await assetRepo.find({
+            where: { type: 'unit' },
+            relations: { creator: true },
             order: { created_at: 'DESC' },
         })
 
@@ -75,21 +84,23 @@ async function listUnits(req, res) {
             res,
             units.map((unit) => ({
                 id: unit.id,
-                deviceName: unit.device_name,
+                deviceName: unit.description || unit.qr_code,
                 qrCode: unit.qr_code,
                 status: unit.status,
+                condition: unit.condition,
                 location: unit.location,
-                description: unit.description,
                 modelType: unit.model_type,
                 serialNumber: unit.serial_number,
-                condition: unit.condition || 'good',
+                description: unit.description,
                 notes: unit.notes,
+                imageData: unit.image_data,
                 createdBy: unit.creator?.full_name || null,
-                monitorCount: unit.monitors?.length || 0,
                 createdAt: unit.created_at,
+                updatedAt: unit.updated_at,
             })),
         )
-    } catch {
+    } catch (error) {
+        console.error('List units error:', error)
         return serverError(res, 'Failed to list system units')
     }
 }
@@ -97,19 +108,19 @@ async function listUnits(req, res) {
 async function updateUnit(req, res) {
     try {
         const { id } = req.params
-        const { deviceName, status, location, description } = req.body || {}
+        const { deviceName, status, condition, location, description, notes, modelType, serialNumber, imageData } = req.body || {}
 
-        const allowedStatus = ['active', 'inactive', 'maintenance']
+        const allowedStatus = ['active', 'inactive', 'maintenance', 'broken', 'repair']
         if (status && !allowedStatus.includes(status)) {
             return res.status(400).json({ message: 'Invalid status' })
         }
 
-        const unitRepo = AppDataSource.getRepository('Unit')
+        const assetRepo = AppDataSource.getRepository('Asset')
         const activityRepo = AppDataSource.getRepository('ActivityLog')
 
-        const unit = await unitRepo.findOne({
-            where: { id },
-            relations: { creator: true, monitors: true },
+        const unit = await assetRepo.findOne({
+            where: { id, type: 'unit' },
+            relations: { creator: true },
         })
 
         if (!unit) {
@@ -117,75 +128,133 @@ async function updateUnit(req, res) {
         }
 
         // Track changes for activity log
-        const changes = []
+        const changeDetails = []
 
-        if (typeof deviceName === 'string') {
-            const next = deviceName.trim()
-            if (!next) {
-                return res.status(400).json({ message: 'deviceName cannot be empty' })
-            }
-            if (unit.device_name !== next) {
-                changes.push(`Device name: "${unit.device_name}" → "${next}"`)
-                unit.device_name = next
-            }
+        if (typeof status === 'string' && unit.status !== status) {
+            changeDetails.push({ field: 'Status', before: unit.status, after: status })
+            unit.status = status
         }
 
-        if (typeof status === 'string') {
-            if (unit.status !== status) {
-                changes.push(`Status: ${unit.status} → ${status}`)
-                unit.status = status
-            }
+        if (typeof condition === 'string' && unit.condition !== condition) {
+            changeDetails.push({ field: 'Condition', before: unit.condition || '(empty)', after: condition || '(empty)' })
+            unit.condition = condition || 'good'
         }
 
-        if (typeof location === 'string') {
-            const next = location.trim() || null
-            if (unit.location !== next) {
-                changes.push(`Location: "${unit.location || '(unset)'}" → "${next || '(unset)'}"`)
-                unit.location = next
-            }
+        if (typeof location === 'string' && unit.location !== location) {
+            changeDetails.push({ field: 'Location', before: unit.location || '(empty)', after: location || '(empty)' })
+            unit.location = location || 'Unassigned'
         }
 
-        if (typeof description === 'string') {
-            const next = description.trim() || null
-            if (unit.description !== next) {
-                changes.push(`Description: "${unit.description || '(empty)'}" → "${next || '(empty)'}"`)
-                unit.description = next
-            }
+        if (typeof description === 'string' && unit.description !== description) {
+            changeDetails.push({ field: 'Description', before: unit.description || '(empty)', after: description || '(empty)' })
+            unit.description = description || null
         }
 
-        const saved = await unitRepo.save(unit)
+        if (typeof notes === 'string' && unit.notes !== notes) {
+            changeDetails.push({ field: 'Notes', before: unit.notes || '(empty)', after: notes || '(empty)' })
+            unit.notes = notes || null
+        }
+
+        if (typeof modelType === 'string' && unit.model_type !== modelType) {
+            changeDetails.push({ field: 'Model Type', before: unit.model_type || '(empty)', after: modelType || '(empty)' })
+            unit.model_type = modelType || null
+        }
+
+        if (typeof serialNumber === 'string' && unit.serial_number !== serialNumber) {
+            changeDetails.push({ field: 'Serial Number', before: unit.serial_number || '(empty)', after: serialNumber || '(empty)' })
+            unit.serial_number = serialNumber || null
+        }
+
+        if (imageData !== undefined) {
+            const oldImageState = unit.image_data ? '(image)' : '(no image)'
+            const newImageState = imageData ? '(image)' : '(no image)'
+            if (oldImageState !== newImageState) {
+                changeDetails.push({ field: 'Image', before: oldImageState, after: newImageState })
+            }
+            unit.image_data = imageData
+        }
+
+        const saved = await assetRepo.save(unit)
 
         // Log activity if there were changes
-        if (changes.length > 0) {
+        if (changeDetails.length > 0) {
             await activityRepo.save(
                 activityRepo.create({
                     action: 'updated',
-                    unit_id: saved.id,
+                    asset_id: saved.id,
                     user_id: req.auth.userId,
-                    description: changes.join('; '),
+                    description: JSON.stringify({ changes: changeDetails }),
+                    item_name: deviceName || saved.description || saved.qr_code,
+                    item_qr: saved.qr_code,
                 })
             )
         }
 
-        const withRelations = await unitRepo.findOne({
+        const withRelations = await assetRepo.findOne({
             where: { id: saved.id },
-            relations: { creator: true, monitors: true },
+            relations: { creator: true },
         })
 
         return ok(res, {
             id: withRelations.id,
-            deviceName: withRelations.device_name,
+            deviceName: deviceName || withRelations.description || withRelations.qr_code,
             qrCode: withRelations.qr_code,
             status: withRelations.status,
+            condition: withRelations.condition,
             location: withRelations.location,
+            modelType: withRelations.model_type,
+            serialNumber: withRelations.serial_number,
             description: withRelations.description,
+            notes: withRelations.notes,
+            imageData: withRelations.image_data || null,
             createdBy: withRelations.creator?.full_name || null,
-            monitorCount: withRelations.monitors?.length || 0,
             createdAt: withRelations.created_at,
             updatedAt: withRelations.updated_at,
         })
-    } catch {
+    } catch (error) {
+        console.error('Update unit error:', error)
         return serverError(res, 'Failed to update system unit')
+    }
+}
+
+async function deleteUnit(req, res) {
+    try {
+        const { id } = req.params
+
+        const assetRepo = AppDataSource.getRepository('Asset')
+        const activityRepo = AppDataSource.getRepository('ActivityLog')
+
+        const unit = await assetRepo.findOne({
+            where: { id, type: 'unit' },
+        })
+
+        if (!unit) {
+            return res.status(404).json({ message: 'Unit not found' })
+        }
+
+        // Log activity BEFORE deleting
+        try {
+            const activityLogData = {
+                action: 'deleted',
+                asset_id: id,
+                user_id: req.auth.userId,
+                description: `Deleted unit (${unit.qr_code})`,
+                deleted_item_name: unit.description || unit.qr_code,
+                deleted_item_qr: unit.qr_code,
+                item_name: unit.description || unit.qr_code,
+                item_qr: unit.qr_code,
+            }
+            await activityRepo.save(activityRepo.create(activityLogData))
+        } catch (logError) {
+            console.error('Failed to log unit deletion activity:', logError.message)
+        }
+
+        await assetRepo.remove(unit)
+
+        return ok(res, { message: 'Unit deleted successfully' })
+    } catch (error) {
+        console.error('Delete unit error:', error)
+        return serverError(res, 'Failed to delete system unit')
     }
 }
 
@@ -193,4 +262,5 @@ module.exports = {
     createUnit,
     listUnits,
     updateUnit,
+    deleteUnit,
 }

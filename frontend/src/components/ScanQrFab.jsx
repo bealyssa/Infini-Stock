@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { BrowserQRCodeReader } from '@zxing/browser'
 import { Camera, QrCode, Upload, XCircle, Printer } from 'lucide-react'
-import { assetApi } from '../api'
+import { assetApi, monitorApi, unitApi } from '../api'
 import { Button } from './ui/Button'
 import {
     Dialog,
@@ -13,10 +13,12 @@ import {
     useDialog,
 } from './ui/Dialog'
 import { PrintQRModal } from './ActionModals'
+import { AssetDetailsModal } from './AssetDetailsModal'
 
 
 export default function ScanQrFab() {
     const dialogState = useDialog()
+    const detailsModalState = useDialog()
     const [mode, setMode] = useState('camera') // 'camera' | 'upload'
 
     const [busy, setBusy] = useState(false)
@@ -24,12 +26,43 @@ export default function ScanQrFab() {
     const [decodedQr, setDecodedQr] = useState(null)
     const [asset, setAsset] = useState(null)
     const [printQRModalOpen, setPrintQRModalOpen] = useState(false)
+    const [cameraPermission, setCameraPermission] = useState('prompt') // 'prompt' | 'granted' | 'denied'
+    const [requestingPermission, setRequestingPermission] = useState(false)
 
     const videoRef = useRef(null)
     const controlsRef = useRef(null)
     const handledRef = useRef(false)
 
     const codeReader = useMemo(() => new BrowserQRCodeReader(), [])
+
+    // Request camera permission explicitly
+    const requestCameraPermission = async () => {
+        setRequestingPermission(true)
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                }
+            })
+            // Stop the stream immediately - we just needed to check permission
+            stream.getTracks().forEach(track => track.stop())
+            setCameraPermission('granted')
+            setError(null)
+        } catch (err) {
+            if (err.name === 'NotAllowedError') {
+                setCameraPermission('denied')
+                setError('Camera permission denied. Please allow camera access in your browser settings.')
+            } else if (err.name === 'NotFoundError') {
+                setError('No camera device found on this device.')
+            } else {
+                setError(err.message || 'Unable to access camera')
+            }
+            setCameraPermission('denied')
+        } finally {
+            setRequestingPermission(false)
+        }
+    }
 
     const resetState = () => {
         setMode('camera')
@@ -59,15 +92,50 @@ export default function ScanQrFab() {
         setBusy(true)
 
         try {
-            const { data } = await assetApi.scanAsset(code)
-            setAsset(data)
+            // First, scan the asset to get basic info
+            const { data: assetData } = await assetApi.scanAsset(code)
+
+            let fullAsset = { ...assetData }
+
+            // Fetch full details based on type
+            try {
+                if (assetData.type === 'monitor') {
+                    // Fetch all monitors and find the matching one
+                    const { data: monitors } = await monitorApi.listMonitors()
+                    const monitor = monitors.find(m => m.qrCode === code)
+                    if (monitor) {
+                        fullAsset = { ...fullAsset, ...monitor }
+                    }
+                } else if (assetData.type === 'unit') {
+                    // Fetch all units and find the matching one
+                    const { data: units } = await unitApi.listUnits()
+                    const unit = units.find(u => u.qrCode === code)
+                    if (unit) {
+                        fullAsset = { ...fullAsset, ...unit }
+                    }
+                }
+            } catch (err) {
+                // If fetching full details fails, continue with basic data
+                console.warn('Could not fetch full asset details:', err)
+            }
+
+            setAsset(fullAsset)
+            setBusy(false)
+            // Open details modal after setting asset
+            setTimeout(() => detailsModalState.onOpenChange(true), 100)
         } catch (err) {
             setAsset(null)
-            setError(err?.response?.data?.message || err?.message || 'Failed to scan QR code')
-        } finally {
             setBusy(false)
+            setError(err?.response?.data?.message || err?.message || 'Failed to scan QR code')
         }
     }
+
+    useEffect(() => {
+        // When modal opens and we're in camera mode, auto-request permission
+        if (dialogState.open && mode === 'camera' && cameraPermission === 'prompt') {
+            requestCameraPermission()
+        }
+    }, [dialogState.open, mode, cameraPermission])
 
     useEffect(() => {
         if (!dialogState.open) {
@@ -80,6 +148,11 @@ export default function ScanQrFab() {
         if (mode !== 'camera') {
             handledRef.current = false
             stopCamera()
+            return
+        }
+
+        // If camera permission not granted, don't try to access camera
+        if (cameraPermission !== 'granted') {
             return
         }
 
@@ -135,7 +208,7 @@ export default function ScanQrFab() {
             stopCamera()
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [dialogState.open, mode, codeReader])
+    }, [dialogState.open, mode, codeReader, cameraPermission])
 
     const handleUpload = async (file) => {
         if (!file) return
@@ -197,6 +270,10 @@ export default function ScanQrFab() {
                                 setError(null)
                                 setAsset(null)
                                 setDecodedQr(null)
+                                // Auto-request camera permission when switching to camera mode
+                                if (cameraPermission === 'prompt') {
+                                    requestCameraPermission()
+                                }
                             }}
                         >
                             <Camera size={18} />
@@ -228,18 +305,46 @@ export default function ScanQrFab() {
                                             <XCircle size={16} />
                                             <span>Camera error</span>
                                         </div>
-                                    ) : (
+                                    ) : cameraPermission === 'granted' ? (
                                         <p className="text-xs text-gray-500">Point at a QR code</p>
+                                    ) : (
+                                        <p className="text-xs text-amber-500">Permission needed</p>
                                     )}
                                 </div>
-                                <div className="overflow-hidden rounded-md border border-[#3d2e5c] bg-black">
-                                    <video
-                                        ref={videoRef}
-                                        className="h-56 w-full object-cover"
-                                        muted
-                                        playsInline
-                                    />
-                                </div>
+
+                                {cameraPermission !== 'granted' ? (
+                                    <div className="rounded-md border border-[#3d2e5c] bg-black p-6 flex flex-col items-center justify-center h-56">
+                                        <Camera size={32} className="text-gray-500 mb-3" />
+                                        <p className="text-gray-400 text-sm text-center mb-4">
+                                            {cameraPermission === 'denied'
+                                                ? 'Camera permission was denied'
+                                                : 'Camera access is required to scan QR codes'}
+                                        </p>
+                                        <Button
+                                            type="button"
+                                            onClick={requestCameraPermission}
+                                            disabled={requestingPermission}
+                                            className="gap-2"
+                                        >
+                                            <Camera size={16} />
+                                            {requestingPermission ? 'Requesting...' : 'Request Camera Permission'}
+                                        </Button>
+                                        {cameraPermission === 'denied' && (
+                                            <p className="text-xs text-gray-500 mt-3 text-center">
+                                                If permission was denied, please check your browser settings and allow camera access for this site.
+                                            </p>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="overflow-hidden rounded-md border border-[#3d2e5c] bg-black">
+                                        <video
+                                            ref={videoRef}
+                                            className="h-56 w-full object-cover"
+                                            muted
+                                            playsInline
+                                        />
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <div className="rounded-lg border border-[#3d2e5c] bg-[#0f0a1a] p-3">
@@ -270,68 +375,35 @@ export default function ScanQrFab() {
                         </div>
                     ) : null}
 
-                    <div className="mt-4 rounded-lg border border-[#3d2e5c] bg-[#0f0a1a] p-4">
-                        <div className="flex items-start justify-between gap-3">
-                            <div>
-                                <p className="text-sm font-semibold text-gray-200">Result</p>
-                                <p className="text-xs text-gray-500">{decodedQr || '—'}</p>
-                            </div>
-                            {busy ? (
-                                <p className="text-xs text-gray-500">Loading…</p>
-                            ) : null}
+                    {asset ? (
+                        <div className="mt-4 rounded-lg border border-green-500/40 bg-green-500/10 px-4 py-3 text-sm text-green-200">
+                            ✓ Asset detected: <span className="font-semibold">{asset.deviceName || asset.qrCode}</span>
+                            <p className="text-xs text-green-300/70 mt-1">Tap "View Details" to see full information</p>
                         </div>
-
-                        {asset ? (
-                            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-[160px_1fr]">
-                                <div className="rounded-md border border-[#3d2e5c] bg-[#0f0a1a] p-2">
-                                    {asset.imageData ? (
-                                        <img
-                                            src={asset.imageData}
-                                            alt={asset.qrCode}
-                                            className="h-36 w-full rounded-md object-cover"
-                                        />
-                                    ) : (
-                                        <div className="flex h-36 items-center justify-center rounded-md border border-dashed border-[#3d2e5c] bg-[#0f0a1a] text-xs text-gray-500">
-                                            No image
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="space-y-2">
-                                    <div className="rounded-md border border-[#3d2e5c] bg-[#0f0a1a] px-3 py-2">
-                                        <div className="text-[11px] uppercase tracking-wider text-gray-500">Type</div>
-                                        <div className="text-sm text-gray-200">{asset.type || 'asset'}</div>
-                                    </div>
-                                    <div className="rounded-md border border-[#3d2e5c] bg-[#0f0a1a] px-3 py-2">
-                                        <div className="text-[11px] uppercase tracking-wider text-gray-500">Status</div>
-                                        <div className="text-sm text-gray-200">{asset.status || '—'}</div>
-                                    </div>
-                                    <div className="rounded-md border border-[#3d2e5c] bg-[#0f0a1a] px-3 py-2">
-                                        <div className="text-[11px] uppercase tracking-wider text-gray-500">Location</div>
-                                        <div className="text-sm text-gray-200">{asset.location || '—'}</div>
-                                    </div>
-                                    <div className="rounded-md border border-[#3d2e5c] bg-[#0f0a1a] px-3 py-2">
-                                        <div className="text-[11px] uppercase tracking-wider text-gray-500">Description</div>
-                                        <div className="text-sm text-gray-200">{asset.description || '—'}</div>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : (
-                            <p className="mt-3 text-sm text-gray-500">No scanned asset yet.</p>
-                        )}
-                    </div>
+                    ) : null}
 
                     <DialogFooter className="pt-4 flex gap-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={() => setPrintQRModalOpen(true)}
-                            disabled={!asset}
-                            className="gap-2"
-                        >
-                            <Printer size={16} />
-                            Print QR
-                        </Button>
+                        {asset ? (
+                            <>
+                                <Button
+                                    type="button"
+                                    variant="default"
+                                    onClick={() => detailsModalState.onOpenChange(true)}
+                                    className="gap-2"
+                                >
+                                    View Details
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setPrintQRModalOpen(true)}
+                                    className="gap-2"
+                                >
+                                    <Printer size={16} />
+                                    Print QR
+                                </Button>
+                            </>
+                        ) : null}
                         <Button
                             type="button"
                             variant="secondary"
@@ -348,6 +420,14 @@ export default function ScanQrFab() {
                 isOpen={printQRModalOpen}
                 onClose={() => setPrintQRModalOpen(false)}
                 item={asset}
+            />
+
+            {/* Asset Details Modal */}
+            <AssetDetailsModal
+                isOpen={detailsModalState.open}
+                onClose={() => detailsModalState.onOpenChange(false)}
+                asset={asset}
+                loading={busy}
             />
         </>
     )

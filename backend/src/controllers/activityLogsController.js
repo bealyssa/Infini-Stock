@@ -19,11 +19,9 @@ async function listActivityLogs(req, res) {
 
         // Determine which column to filter by based on itemType
         if (itemId && itemType) {
-            if (itemType === 'unit') {
-                filterColumn = 'unit_id'
-                filterId = itemId
-            } else if (itemType === 'monitor') {
-                filterColumn = 'monitor_id'
+            if (itemType === 'unit' || itemType === 'monitor') {
+                // Both units and monitors are stored as assets, filter by asset_id
+                filterColumn = 'asset_id'
                 filterId = itemId
             }
         }
@@ -41,7 +39,7 @@ async function listActivityLogs(req, res) {
                 id: log.id,
                 assetId: log.asset?.id,
                 assetQrCode: log.asset?.qr_code,
-                monitor: log.monitor,
+                assetType: log.asset?.type,
                 unit: log.unit,
                 action: log.action,
                 description: log.description,
@@ -53,6 +51,10 @@ async function listActivityLogs(req, res) {
                 userName: log.user?.full_name || null,
                 userEmail: log.user?.email || null,
                 timestamp: log.timestamp,
+                deletedItemName: log.deleted_item_name,
+                deletedItemQr: log.deleted_item_qr,
+                itemName: log.item_name,
+                itemQr: log.item_qr,
             })),
         )
     } catch {

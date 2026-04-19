@@ -31,12 +31,15 @@ module.exports = new EntitySchema({
             nullable: false,
         },
         created_at: {
-            type: 'timestamp',
-            createDate: true,
+            type: 'timestamp with time zone',
+            default: () => 'CURRENT_TIMESTAMP',
+            createDate: false,
             update: false,
         },
         updated_at: {
-            type: 'timestamp',
+            type: 'timestamp with time zone',
+            default: () => 'CURRENT_TIMESTAMP',
+            onUpdate: 'CURRENT_TIMESTAMP',
             updateDate: true,
         },
         created_by: {
@@ -72,6 +75,10 @@ module.exports = new EntitySchema({
             type: 'text',
             nullable: true,
         },
+        linked_unit_id: {
+            type: 'uuid',
+            nullable: true,
+        },
     },
     relations: {
         parent: {
@@ -86,6 +93,13 @@ module.exports = new EntitySchema({
             type: 'one-to-many',
             target: 'Asset',
             inverseSide: 'parent',
+        },
+        linkedAsset: {
+            type: 'many-to-one',
+            target: 'Asset',
+            joinColumn: { name: 'linked_unit_id' },
+            nullable: true,
+            onDelete: 'SET NULL',
         },
         creator: {
             type: 'many-to-one',

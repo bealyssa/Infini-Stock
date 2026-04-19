@@ -35,16 +35,16 @@ export const assetApi = {
 
 export const unitApi = {
     listUnits: () => api.get('/units'),
-    createUnit: ({ deviceName, qrCode, status, location, description } = {}) =>
-        api.post('/units', { deviceName, qrCode, status, location, description }),
+    createUnit: ({ deviceName, qrCode, status, location, condition, modelType, serialNumber, description, notes, imageData } = {}) =>
+        api.post('/units', { deviceName, qrCode, status, location, condition, modelType, serialNumber, description, notes, imageData }),
     updateUnit: (id, payload = {}) => api.patch(`/units/${id}`, payload),
     deleteUnit: (id) => api.delete(`/units/${id}`),
 }
 
 export const monitorApi = {
     listMonitors: () => api.get('/monitors'),
-    createMonitor: ({ deviceName, qrCode, status, description, linkedUnitId } = {}) =>
-        api.post('/monitors', { deviceName, qrCode, status, description, linkedUnitId }),
+    createMonitor: ({ deviceName, qrCode, status, modelType, serialNumber, condition, description, notes, linkedUnitId, imageData } = {}) =>
+        api.post('/monitors', { deviceName, qrCode, status, modelType, serialNumber, condition, description, notes, linkedUnitId, imageData }),
     updateMonitor: (id, payload = {}) => api.patch(`/monitors/${id}`, payload),
     deleteMonitor: (id) => api.delete(`/monitors/${id}`),
 }

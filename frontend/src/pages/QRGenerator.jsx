@@ -144,7 +144,7 @@ function QRGenerator() {
 
                                         <div>
                                             <label className="block text-sm font-semibold text-gray-300 mb-3">
-                                                Asset Image (optional)
+                                                Asset Image
                                             </label>
                                             <div className="relative">
                                                 <input

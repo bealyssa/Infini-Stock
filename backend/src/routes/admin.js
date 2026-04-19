@@ -1,17 +1,23 @@
 const express = require('express')
-const { requireAuth, requireRole } = require('../middleware/auth')
+const { requireAuth, requireRole, requirePermission } = require('../middleware/auth')
 const adminController = require('../controllers/adminController')
 
 const router = express.Router()
 
-// All admin routes require authentication and admin role
+// All admin routes require authentication
 router.use(requireAuth)
-router.use(requireRole('admin'))
 
 // User management endpoints
-router.get('/users', adminController.getAllUsers)
-router.post('/users', adminController.createUser)
-router.patch('/users/:id', adminController.updateUser)
-router.delete('/users/:id', adminController.deleteUser)
+// GET /users - read users (admin, manager)
+router.get('/users', requirePermission('user:read'), adminController.getAllUsers)
+
+// POST /users - create users (admin, manager)
+router.post('/users', requirePermission('user:create'), adminController.createUser)
+
+// PATCH /users/:id - update users (admin, manager)
+router.patch('/users/:id', requirePermission('user:update'), adminController.updateUser)
+
+// DELETE /users/:id - delete users (admin only)
+router.delete('/users/:id', requireRole('admin'), adminController.deleteUser)
 
 module.exports = router

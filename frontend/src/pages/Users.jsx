@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Plus, Trash2, Edit2, ToggleLeft, ToggleRight, Trash } from 'lucide-react'
+import { Plus, Trash2, Edit2, ToggleLeft, ToggleRight, Trash, Eye, Shield } from 'lucide-react'
 import { Button } from '../components/ui/Button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/Dialog'
 import { Input } from '../components/ui/Input'
@@ -7,24 +7,37 @@ import { Select } from '../components/ui/Select'
 import { Badge } from '../components/ui/Badge'
 import { Card } from '../components/ui/Card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table'
+import { ToastContainer } from '../components/ui/Toast'
 import FullPageLoader from '../components/FullPageLoader'
 import TablePagination from '../components/TablePagination'
+import { canEditData, isViewOnly, isManager, getManagerOperations } from '../lib/permissions'
 import { adminApi } from '../api'
 
 function Users() {
     const [users, setUsers] = useState([])
     const [loading, setLoading] = useState(false)
-    const [error, setError] = useState('')
-    const [success, setSuccess] = useState('')
+    const [toasts, setToasts] = useState([])
     const [isDialogOpen, setIsDialogOpen] = useState(false)
     const [isEditMode, setIsEditMode] = useState(false)
     const [editingUserId, setEditingUserId] = useState(null)
+    const canEdit = canEditData()
+    const viewOnly = isViewOnly()
 
     const [touched, setTouched] = useState({
         full_name: false,
         email: false,
         password: false,
     })
+
+    const showToast = (message, type = 'success', duration = 3000) => {
+        const id = Math.random()
+        setToasts(prev => [...prev, { id, message, type, duration }])
+        return id
+    }
+
+    const removeToast = (id) => {
+        setToasts(prev => prev.filter(t => t.id !== id))
+    }
 
     const [formErrors, setFormErrors] = useState({
         full_name: '',
@@ -42,6 +55,13 @@ function Users() {
     })
 
     const [selectedUsers, setSelectedUsers] = useState(new Set())
+    const [searchQuery, setSearchQuery] = useState('')
+
+    const filteredUsers = users.filter(user =>
+        user.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        user.role?.toLowerCase().includes(searchQuery.toLowerCase())
+    )
 
     const validateEmail = (value) => {
         if (isEditMode) return ''
@@ -104,10 +124,10 @@ function Users() {
 
     useEffect(() => {
         setCurrentPage(1)
-    }, [users.length])
+    }, [searchQuery])
 
-    const totalPages = Math.max(1, Math.ceil(users.length / ITEMS_PER_PAGE))
-    const pagedUsers = users.slice(
+    const totalPages = Math.max(1, Math.ceil(filteredUsers.length / ITEMS_PER_PAGE))
+    const pagedUsers = filteredUsers.slice(
         (currentPage - 1) * ITEMS_PER_PAGE,
         currentPage * ITEMS_PER_PAGE,
     )
@@ -139,8 +159,9 @@ function Users() {
             await Promise.all(idsToDelete.map(id => adminApi.deleteUser(id)))
             setUsers(prev => prev.filter(u => !idsToDelete.includes(u._id)))
             setSelectedUsers(new Set())
+            showToast(`${selectedUsers.size} user(s) deleted successfully`, 'success')
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to delete users')
+            showToast(err.response?.data?.message || 'Failed to delete users', 'error')
         }
     }
 
@@ -162,9 +183,8 @@ function Users() {
             setLoading(true)
             const response = await adminApi.listUsers()
             setUsers(response.data)
-            setError('')
         } catch (err) {
-            setError(err.response?.data?.message || err.message || 'Failed to fetch users')
+            showToast(err.response?.data?.message || err.message || 'Failed to fetch users', 'error')
             console.error('Fetch users error:', err)
         } finally {
             setLoading(false)
@@ -172,6 +192,10 @@ function Users() {
     }
 
     const handleOpenDialog = (user = null) => {
+        if (!canEdit) {
+            showToast('View-only mode: You cannot edit users', 'error')
+            return
+        }
         if (user) {
             setIsEditMode(true)
             setEditingUserId(user.id)
@@ -248,8 +272,6 @@ function Users() {
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-        setError('')
-        setSuccess('')
 
         const nextErrors = validateForm(formData)
         setFormErrors(nextErrors)
@@ -261,7 +283,7 @@ function Users() {
 
         const hasErrors = Object.values(nextErrors).some(Boolean)
         if (hasErrors) {
-            setError('Please fix the highlighted fields')
+            showToast('Please fix the highlighted fields', 'error')
             return
         }
 
@@ -271,7 +293,7 @@ function Users() {
             if (isEditMode) {
                 // Update user
                 const response = await adminApi.updateUser(editingUserId, formData)
-                setSuccess('User updated successfully')
+                showToast('User updated successfully', 'success')
                 setUsers(
                     users.map((u) =>
                         u.id === editingUserId ? response.data : u
@@ -280,18 +302,16 @@ function Users() {
             } else {
                 // Create new user
                 const response = await adminApi.createUser(formData)
-                setSuccess(
-                    response.data?.verification_sent
-                        ? 'User created. Verification email sent (expires in 5 minutes).'
-                        : 'User created successfully'
-                )
+                const message = response.data?.verification_sent
+                    ? 'User created. Verification email sent (expires in 5 minutes).'
+                    : 'User created successfully'
+                showToast(message, 'success')
                 setUsers([...users, response.data])
             }
 
             handleCloseDialog()
-            setTimeout(() => setSuccess(''), 3000)
         } catch (err) {
-            setError(err.response?.data?.message || err.message || 'Failed to save user')
+            showToast(err.response?.data?.message || err.message || 'Failed to save user', 'error')
             console.error('Save user error:', err)
         }
     }
@@ -303,11 +323,10 @@ function Users() {
 
         try {
             await adminApi.deleteUser(userId)
-            setSuccess('User deleted successfully')
+            showToast('User deleted successfully', 'success')
             setUsers(users.filter((u) => u.id !== userId))
-            setTimeout(() => setSuccess(''), 3000)
         } catch (err) {
-            setError(err.response?.data?.message || err.message || 'Failed to delete user')
+            showToast(err.response?.data?.message || err.message || 'Failed to delete user', 'error')
             console.error('Delete user error:', err)
         }
     }
@@ -318,12 +337,10 @@ function Users() {
             setUsers(
                 users.map((u) => (u.id === userId ? response.data : u))
             )
-            setSuccess(
-                `User ${!currentStatus ? 'activated' : 'deactivated'} successfully`
-            )
-            setTimeout(() => setSuccess(''), 2000)
+            const message = `User ${!currentStatus ? 'activated' : 'deactivated'} successfully`
+            showToast(message, 'success')
         } catch (err) {
-            setError(err.response?.data?.message || err.message || 'Failed to update user')
+            showToast(err.response?.data?.message || err.message || 'Failed to update user', 'error')
             console.error('Toggle active error:', err)
         }
     }
@@ -340,15 +357,27 @@ function Users() {
                         Manage Users
                     </h1>
                     <p className="text-gray-400 mt-1">
-                        {users.length} total users
+                        {filteredUsers.length} {searchQuery ? 'matching' : 'total'} users
                     </p>
                 </div>
                 <div className="flex gap-2">
+                    {viewOnly && (
+                        <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-900/30 border border-blue-500/50 text-blue-200 text-sm font-medium">
+                            <Eye size={16} />
+                            View-only mode
+                        </div>
+                    )}
+                    {isManager() && (
+                        <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-900/30 border border-purple-500/50 text-purple-200 text-sm font-medium">
+                            <Shield size={16} />
+                            Manager Mode: {getManagerOperations().display}
+                        </div>
+                    )}
                     <Button
                         variant="destructive"
                         size="sm"
                         onClick={handleBulkDelete}
-                        disabled={selectedUsers.size === 0}
+                        disabled={selectedUsers.size === 0 || !canEdit}
                         className="bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <Trash size={16} className="mr-2" />
@@ -356,7 +385,8 @@ function Users() {
                     </Button>
                     <Button
                         onClick={() => handleOpenDialog()}
-                        className="flex items-center gap-2"
+                        disabled={!canEdit}
+                        className="flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <Plus size={20} />
                         Add User
@@ -364,17 +394,16 @@ function Users() {
                 </div>
             </div>
 
-            {error && (
-                <Card className="border-l-4 border-red-500">
-                    <p className="text-red-400">{error}</p>
-                </Card>
-            )}
+            <div className="flex gap-2">
+                <Input
+                    type="text"
+                    placeholder="Search by name, email, or role..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                />
+            </div>
 
-            {success && (
-                <Card className="border-l-4 border-green-500">
-                    <p className="text-green-400">{success}</p>
-                </Card>
-            )}
+            <ToastContainer toasts={toasts} onRemove={removeToast} />
 
             <Card>
                 {loading ? (
@@ -384,6 +413,10 @@ function Users() {
                 ) : users.length === 0 ? (
                     <div className="flex items-center justify-center py-12">
                         <div className="text-gray-400">No users found</div>
+                    </div>
+                ) : filteredUsers.length === 0 ? (
+                    <div className="flex items-center justify-center py-12">
+                        <div className="text-gray-400">No users match your search</div>
                     </div>
                 ) : (
                     <>
@@ -451,16 +484,18 @@ function Users() {
                                         <TableCell className="px-6 py-3">
                                             <div className="flex items-center gap-2">
                                                 <button
-                                                    onClick={() => handleOpenDialog(user)}
-                                                    className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-gray-200 transition"
-                                                    title="Edit user"
+                                                    onClick={() => canEdit && handleOpenDialog(user)}
+                                                    disabled={!canEdit}
+                                                    className="p-2 rounded-lg hover:bg-white/5 text-gray-400 hover:text-gray-200 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    title={canEdit ? 'Edit user' : 'View-only mode'}
                                                 >
                                                     <Edit2 size={18} />
                                                 </button>
                                                 <button
-                                                    onClick={() => handleDeleteUser(user.id)}
-                                                    className="p-2 rounded-lg hover:bg-red-900/20 text-gray-400 hover:text-red-400 transition"
-                                                    title="Delete user"
+                                                    onClick={() => canEdit && handleDeleteUser(user.id)}
+                                                    disabled={!canEdit}
+                                                    className="p-2 rounded-lg hover:bg-red-900/20 text-gray-400 hover:text-red-400 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    title={canEdit ? 'Delete user' : 'View-only mode'}
                                                 >
                                                     <Trash2 size={18} />
                                                 </button>

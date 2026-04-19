@@ -11,12 +11,7 @@ require('reflect-metadata')
 const { AppDataSource } = require('../src/config/dataSource')
 const Profile = require('../src/models/Profile')
 const Location = require('../src/models/Location')
-const Unit = require('../src/models/Unit')
-const Monitor = require('../src/models/Monitor')
 const Asset = require('../src/models/Asset')
-const MonitorAssignment = require('../src/models/MonitorAssignment')
-const AssetMovement = require('../src/models/AssetMovement')
-const AssetStatusHistory = require('../src/models/AssetStatusHistory')
 const ActivityLog = require('../src/models/ActivityLog')
 const { hashPassword } = require('../src/utils/password')
 
@@ -146,269 +141,267 @@ const seedLocations = [
     },
 ]
 
-const seedUnits = [
+const seedAssets = [
+    // Original units and monitors
     {
-        id: '770e8400-e29b-41d4-a716-446655440001',
-        device_name: 'Operations Control Unit A',
+        id: '990e8400-e29b-41d4-a716-446655440001',
         qr_code: 'UNIT-HQ-001',
+        type: 'unit',
         status: 'active',
         location: 'Head Office NOC',
-        description: 'Primary control unit used by the operations team.',
         created_by: '550e8400-e29b-41d4-a716-446655440001',
+        description: 'Primary control unit used by the operations team.',
         model_type: 'Dell OptiPlex 7090',
         serial_number: 'DELL-OP7090-001-HQ',
         condition: 'good',
         notes: 'Recently maintained. All systems operational. Last service 2024-11-15.',
     },
     {
-        id: '770e8400-e29b-41d4-a716-446655440002',
-        device_name: 'Help Desk Unit B',
+        id: '990e8400-e29b-41d4-a716-446655440002',
         qr_code: 'UNIT-HQ-002',
+        type: 'unit',
         status: 'maintenance',
         location: 'Head Office IT Support',
-        description: 'Support desk unit scheduled for panel replacement.',
         created_by: '550e8400-e29b-41d4-a716-446655440002',
+        description: 'Support desk unit scheduled for panel replacement.',
         model_type: 'HP Elitedesk 800 G6',
         serial_number: 'HP-ED800G6-002-IT',
         condition: 'fair',
         notes: 'Power supply showing signs of wear. Scheduled for replacement Q1 2025.',
     },
     {
-        id: '770e8400-e29b-41d4-a716-446655440003',
-        device_name: 'Warehouse Receiving Unit',
+        id: '990e8400-e29b-41d4-a716-446655440003',
         qr_code: 'UNIT-WH-003',
+        type: 'unit',
         status: 'active',
         location: 'Warehouse A Receiving',
-        description: 'Receiving bay unit used for intake verification.',
         created_by: '550e8400-e29b-41d4-a716-446655440004',
+        description: 'Receiving bay unit used for intake verification.',
         model_type: 'Lenovo ThinkCentre M90',
         serial_number: 'LEN-TCM90-003-WH',
         condition: 'good',
         notes: 'GPU upgraded in 2024. Running smoothly. Next service due 2025-06.',
     },
-]
-
-const seedMonitors = [
     {
-        id: '880e8400-e29b-41d4-a716-446655440001',
-        device_name: 'NOC Dashboard Monitor 24in',
+        id: '990e8400-e29b-41d4-a716-446655440004',
         qr_code: 'MON-HQ-001',
+        type: 'monitor',
         status: 'active',
-        description: 'Main display for live status dashboards.',
+        location: 'Head Office NOC',
         created_by: '550e8400-e29b-41d4-a716-446655440001',
-        linked_unit_id: '770e8400-e29b-41d4-a716-446655440001',
+        description: 'Main display for live status dashboards.',
         model_type: 'Dell U2723DE 27in',
         serial_number: 'DELL-U2723DE-001',
         condition: 'good',
         notes: 'Primary dashboard display. Color calibrated monthly. HDMI and DP working.',
+        linked_unit_id: '990e8400-e29b-41d4-a716-446655440001',
     },
     {
-        id: '880e8400-e29b-41d4-a716-446655440002',
-        device_name: 'NOC Backup Monitor 24in',
+        id: '990e8400-e29b-41d4-a716-446655440005',
         qr_code: 'MON-HQ-002',
+        type: 'monitor',
         status: 'active',
-        description: 'Backup display for operations floor failover.',
+        location: 'Head Office NOC',
         created_by: '550e8400-e29b-41d4-a716-446655440002',
-        linked_unit_id: '770e8400-e29b-41d4-a716-446655440001',
+        description: 'Backup display for operations floor failover.',
         model_type: 'Dell U2720Q 27in',
         serial_number: 'DELL-U2720Q-002',
         condition: 'good',
         notes: 'Backup failover monitor. Tested weekly. Ready for immediate deployment.',
+        linked_unit_id: '990e8400-e29b-41d4-a716-446655440001',
     },
     {
-        id: '880e8400-e29b-41d4-a716-446655440003',
-        device_name: 'Help Desk Monitor 27in',
+        id: '990e8400-e29b-41d4-a716-446655440006',
         qr_code: 'MON-HQ-003',
+        type: 'monitor',
         status: 'maintenance',
-        description: 'Help desk display awaiting replacement panel.',
+        location: 'Head Office IT Support',
         created_by: '550e8400-e29b-41d4-a716-446655440005',
-        linked_unit_id: '770e8400-e29b-41d4-a716-446655440002',
+        description: 'Help desk display awaiting replacement panel.',
         model_type: 'BenQ EW2880U 28in',
         serial_number: 'BENQ-EW2880-003',
         condition: 'poor',
         notes: 'LCD panel flickering intermittently. Replacement panel ordered. ETA: 2025-01-20.',
+        linked_unit_id: '990e8400-e29b-41d4-a716-446655440002',
     },
     {
-        id: '880e8400-e29b-41d4-a716-446655440004',
-        device_name: 'Receiving Bay Monitor 24in',
+        id: '990e8400-e29b-41d4-a716-446655440007',
         qr_code: 'MON-WH-004',
+        type: 'monitor',
         status: 'active',
-        description: 'Logistics display mounted at the receiving bay.',
+        location: 'Warehouse A Receiving',
         created_by: '550e8400-e29b-41d4-a716-446655440004',
-        linked_unit_id: '770e8400-e29b-41d4-a716-446655440003',
+        description: 'Logistics display mounted at the receiving bay.',
         model_type: 'LG 24UP550 24in',
         serial_number: 'LG-24UP550-004',
         condition: 'good',
         notes: 'Recently installed. USB-C connectivity working. Brightness sensor active.',
+        linked_unit_id: '990e8400-e29b-41d4-a716-446655440003',
     },
-]
-
-const seedAssets = [
+    // Additional units from reseed-devices
     {
-        id: '990e8400-e29b-41d4-a716-446655440001',
-        qr_code: 'AST-UNIT-001',
+        id: '770e8400-e29b-41d4-a716-446655440001',
+        qr_code: 'UNIT-SR-CTRL-001',
         type: 'unit',
         status: 'active',
         location: 'Head Office NOC',
+        description: 'Primary control unit for server room monitoring and management.',
         created_by: '550e8400-e29b-41d4-a716-446655440001',
-        parent_id: null,
-        model_type: 'Dell OptiPlex 7090',
-        serial_number: 'DELL-OP7090-001-HQ',
+        model_type: 'Dell PowerEdge R750',
+        serial_number: 'DL-PE750-ALPHA-2024',
         condition: 'good',
-        notes: 'Primary NOC control system. All components verified.',
+        notes: 'Recently deployed in December 2024. All systems operational. GPU accelerated.',
     },
     {
-        id: '990e8400-e29b-41d4-a716-446655440002',
-        qr_code: 'AST-UNIT-002',
+        id: '770e8400-e29b-41d4-a716-446655440002',
+        qr_code: 'UNIT-IT-WS-002',
         type: 'unit',
         status: 'active',
         location: 'Head Office IT Support',
+        description: 'Workstation for technical support and troubleshooting operations.',
         created_by: '550e8400-e29b-41d4-a716-446655440002',
-        parent_id: null,
-        model_type: 'HP Elitedesk 800 G6',
-        serial_number: 'HP-ED800G6-002-IT',
-        condition: 'fair',
-        notes: 'Help desk support unit. Minor thermal issues detected.',
+        model_type: 'HP ZBook Fury 16',
+        serial_number: 'HP-ZBF16-BETA-2024',
+        condition: 'good',
+        notes: 'High-performance workstation. SSD upgraded to 2TB. Thermal management excellent.',
     },
     {
-        id: '990e8400-e29b-41d4-a716-446655440003',
-        qr_code: 'AST-UNIT-003',
+        id: '770e8400-e29b-41d4-a716-446655440003',
+        qr_code: 'UNIT-WH-LOG-003',
         type: 'unit',
         status: 'active',
         location: 'Warehouse A Receiving',
+        description: 'Terminal unit for inventory tracking and logistics coordination.',
         created_by: '550e8400-e29b-41d4-a716-446655440004',
-        parent_id: null,
-        model_type: 'Lenovo ThinkCentre M90',
-        serial_number: 'LEN-TCM90-003-WH',
-        condition: 'good',
-        notes: 'Warehouse receiving verification system. Fully operational.',
+        model_type: 'Lenovo ThinkCentre M75q',
+        serial_number: 'LEN-TCM75Q-GAMMA-24',
+        condition: 'excellent',
+        notes: 'Recently purchased. Compact form factor. Network adapter upgraded to 10GbE.',
     },
     {
-        id: '990e8400-e29b-41d4-a716-446655440004',
-        qr_code: 'AST-MON-001',
+        id: '770e8400-e29b-41d4-a716-446655440004',
+        qr_code: 'UNIT-BR-DASH-004',
+        type: 'unit',
+        status: 'maintenance',
+        location: 'Branch Support Lab',
+        description: 'Dashboard display unit for branch operations monitoring.',
+        created_by: '550e8400-e29b-41d4-a716-446655440003',
+        model_type: 'ASUS VivoPC M32CD',
+        serial_number: 'ASS-VPC32CD-DELTA-23',
+        condition: 'fair',
+        notes: 'Undergoing RAM upgrade from 16GB to 32GB. Expected completion Q1 2025.',
+    },
+    {
+        id: '770e8400-e29b-41d4-a716-446655440005',
+        qr_code: 'UNIT-CC-WS-005',
+        type: 'unit',
+        status: 'active',
+        location: 'Head Office IT Support',
+        description: 'High-performance workstation for content creation and design tasks.',
+        created_by: '550e8400-e29b-41d4-a716-446655440005',
+        model_type: 'Mac Studio M2 Max',
+        serial_number: 'MAC-STD-M2-EPSILON',
+        condition: 'excellent',
+        notes: '64GB unified memory. GPU accelerated rendering. Recently received security update.',
+    },
+    // Additional monitors from reseed-devices
+    {
+        id: '880e8400-e29b-41d4-a716-446655440001',
+        qr_code: 'MON-SR-4K-001',
         type: 'monitor',
         status: 'active',
         location: 'Head Office NOC',
-        created_by: '550e8400-e29b-41d4-a716-446655440005',
-        parent_id: '990e8400-e29b-41d4-a716-446655440001',
-        model_type: 'Dell U2723DE 27in',
-        serial_number: 'DELL-U2723DE-001',
-        condition: 'good',
-        notes: 'Primary display. Connected via DP. Color accurate.',
+        description: 'High-resolution 4K display for detailed system monitoring.',
+        created_by: '550e8400-e29b-41d4-a716-446655440001',
+        linked_unit_id: '770e8400-e29b-41d4-a716-446655440001',
+        model_type: 'LG UltraFine 32UP550 32in 4K',
+        serial_number: 'LG-UF32-SR-001',
+        condition: 'excellent',
+        notes: 'Calibrated for color accuracy. USB-C connectivity with 90W power delivery.',
     },
     {
-        id: '990e8400-e29b-41d4-a716-446655440005',
-        qr_code: 'AST-MON-002',
+        id: '880e8400-e29b-41d4-a716-446655440002',
+        qr_code: 'MON-SR-2K-002',
         type: 'monitor',
-        status: 'repair',
-        location: 'Head Office IT Support',
-        created_by: '550e8400-e29b-41d4-a716-446655440004',
-        parent_id: '990e8400-e29b-41d4-a716-446655440002',
-        model_type: 'BenQ EW2880U 28in',
-        serial_number: 'BENQ-EW2880-003',
-        condition: 'poor',
-        notes: 'Panel repair in progress. Expected back in service by 2025-01-20.',
+        status: 'active',
+        location: 'Head Office NOC',
+        description: 'Secondary backup display for failover scenarios.',
+        created_by: '550e8400-e29b-41d4-a716-446655440002',
+        linked_unit_id: '770e8400-e29b-41d4-a716-446655440001',
+        model_type: 'Dell U2723DE 27in 2K',
+        serial_number: 'DL-U2723DE-SR-02',
+        condition: 'good',
+        notes: 'IPS panel. Tested weekly. Ready for immediate failover deployment.',
     },
     {
-        id: '990e8400-e29b-41d4-a716-446655440006',
-        qr_code: 'AST-MON-003',
+        id: '880e8400-e29b-41d4-a716-446655440003',
+        qr_code: 'MON-IT-WS-003',
+        type: 'monitor',
+        status: 'active',
+        location: 'Head Office IT Support',
+        description: 'Support workstation display for diagnostics and troubleshooting.',
+        created_by: '550e8400-e29b-41d4-a716-446655440004',
+        linked_unit_id: '770e8400-e29b-41d4-a716-446655440002',
+        model_type: 'BenQ EW2880U 28in',
+        serial_number: 'BQ-EW2880-IT-03',
+        condition: 'good',
+        notes: 'USB-C dock integrated. 60W power delivery. Dual connectivity via DP and HDMI.',
+    },
+    {
+        id: '880e8400-e29b-41d4-a716-446655440004',
+        qr_code: 'MON-WH-LCD-004',
         type: 'monitor',
         status: 'active',
         location: 'Warehouse A Receiving',
-        created_by: '550e8400-e29b-41d4-a716-446655440002',
-        parent_id: '990e8400-e29b-41d4-a716-446655440003',
-        model_type: 'LG 24UP550 24in',
-        serial_number: 'LG-24UP550-004',
+        description: 'Rugged display for warehouse logistics tracking.',
+        created_by: '550e8400-e29b-41d4-a716-446655440003',
+        linked_unit_id: '770e8400-e29b-41d4-a716-446655440003',
+        model_type: 'Panasonic BTS ToughVIEW 24in',
+        serial_number: 'PN-TV24-WH-04',
+        condition: 'excellent',
+        notes: 'Industrial grade. IP65 rated for dust/water resistance. Recently installed.',
+    },
+    {
+        id: '880e8400-e29b-41d4-a716-446655440005',
+        qr_code: 'MON-BR-OLED-005',
+        type: 'monitor',
+        status: 'maintenance',
+        location: 'Branch Support Lab',
+        description: 'Premium OLED display for branch operations dashboard.',
+        created_by: '550e8400-e29b-41d4-a716-446655440005',
+        linked_unit_id: '770e8400-e29b-41d4-a716-446655440004',
+        model_type: 'LG OLED evo 27in',
+        serial_number: 'LG-OLED27-BR-05',
         condition: 'good',
-        notes: 'Recently installed. All sensors and connectivity working.',
-    },
-]
-
-const seedMonitorAssignments = [
-    {
-        id: 'aa0e8400-e29b-41d4-a716-446655440001',
-        monitor_id: '990e8400-e29b-41d4-a716-446655440004',
-        unit_id: '990e8400-e29b-41d4-a716-446655440001',
-        assigned_by: '550e8400-e29b-41d4-a716-446655440002',
-        is_current: true,
-        reason: 'Initial deployment at the operations floor.',
+        notes: 'Scheduled for color recalibration in February 2025. Picture quality excellent.',
     },
     {
-        id: 'aa0e8400-e29b-41d4-a716-446655440002',
-        monitor_id: '990e8400-e29b-41d4-a716-446655440005',
-        unit_id: '990e8400-e29b-41d4-a716-446655440002',
-        assigned_by: '550e8400-e29b-41d4-a716-446655440004',
-        is_current: false,
-        unassigned_at: '2025-03-18T08:30:00.000Z',
-        reason: 'Panel replacement and refresh cycle.',
+        id: '880e8400-e29b-41d4-a716-446655440006',
+        qr_code: 'MON-CC-PRI-006',
+        type: 'monitor',
+        status: 'active',
+        location: 'Head Office IT Support',
+        description: 'Color-critical monitor for content creation tasks.',
+        created_by: '550e8400-e29b-41d4-a716-446655440006',
+        linked_unit_id: '770e8400-e29b-41d4-a716-446655440005',
+        model_type: 'Eizo ColorNavigator CG279X 27in',
+        serial_number: 'EZ-CG279X-CC-06',
+        condition: 'excellent',
+        notes: 'Professional color space (Adobe RGB). Hardware calibrated weekly. X-Rite i1 profiled.',
     },
     {
-        id: 'aa0e8400-e29b-41d4-a716-446655440003',
-        monitor_id: '990e8400-e29b-41d4-a716-446655440006',
-        unit_id: '990e8400-e29b-41d4-a716-446655440003',
-        assigned_by: '550e8400-e29b-41d4-a716-446655440002',
-        is_current: true,
-        reason: 'Warehouse deployment completed.',
-    },
-]
-
-const seedAssetMovements = [
-    {
-        id: 'bb0e8400-e29b-41d4-a716-446655440001',
-        asset_id: '990e8400-e29b-41d4-a716-446655440002',
-        from_location_id: '660e8400-e29b-41d4-a716-446655440001',
-        to_location_id: '660e8400-e29b-41d4-a716-446655440002',
-        moved_by: '550e8400-e29b-41d4-a716-446655440005',
-        source: 'web',
-        notes: 'Moved help desk unit to support lab for scheduled service.',
-    },
-    {
-        id: 'bb0e8400-e29b-41d4-a716-446655440002',
-        asset_id: '990e8400-e29b-41d4-a716-446655440004',
-        from_location_id: '660e8400-e29b-41d4-a716-446655440002',
-        to_location_id: '660e8400-e29b-41d4-a716-446655440001',
-        moved_by: '550e8400-e29b-41d4-a716-446655440004',
-        source: 'web',
-        notes: 'Relocated operations monitor back to the NOC desk.',
-    },
-    {
-        id: 'bb0e8400-e29b-41d4-a716-446655440003',
-        asset_id: '990e8400-e29b-41d4-a716-446655440006',
-        from_location_id: null,
-        to_location_id: '660e8400-e29b-41d4-a716-446655440003',
-        moved_by: '550e8400-e29b-41d4-a716-446655440002',
-        source: 'web',
-        notes: 'Initial deployment to the warehouse receiving bay.',
-    },
-]
-
-const seedAssetStatusHistory = [
-    {
-        id: 'cc0e8400-e29b-41d4-a716-446655440001',
-        asset_id: '990e8400-e29b-41d4-a716-446655440005',
-        old_status: 'active',
-        new_status: 'repair',
-        changed_by: '550e8400-e29b-41d4-a716-446655440004',
-        source: 'web',
-        reason: 'Panel flicker reported during morning checks.',
-    },
-    {
-        id: 'cc0e8400-e29b-41d4-a716-446655440002',
-        asset_id: '990e8400-e29b-41d4-a716-446655440002',
-        old_status: 'active',
-        new_status: 'active',
-        changed_by: '550e8400-e29b-41d4-a716-446655440005',
-        source: 'web',
-        reason: 'Verification after relocation and cable management.',
-    },
-    {
-        id: 'cc0e8400-e29b-41d4-a716-446655440003',
-        asset_id: '990e8400-e29b-41d4-a716-446655440006',
-        old_status: 'inactive',
-        new_status: 'active',
-        changed_by: '550e8400-e29b-41d4-a716-446655440002',
-        source: 'iot',
-        reason: 'Warehouse unit brought online after staging.',
+        id: '880e8400-e29b-41d4-a716-446655440007',
+        qr_code: 'MON-CC-SEC-007',
+        type: 'monitor',
+        status: 'active',
+        location: 'Head Office IT Support',
+        description: 'Secondary reference monitor for color verification.',
+        created_by: '550e8400-e29b-41d4-a716-446655440007',
+        linked_unit_id: '770e8400-e29b-41d4-a716-446655440005',
+        model_type: 'ASUS ProArt PA278QV 27in',
+        serial_number: 'AS-PA278-CC-07',
+        condition: 'good',
+        notes: 'Factory calibrated. DP 1.2 certified. Thunderbolt 3 connectivity available.',
     },
 ]
 
@@ -416,52 +409,138 @@ const seedActivityLogs = [
     {
         id: 'dd0e8400-e29b-41d4-a716-446655440001',
         asset_id: '990e8400-e29b-41d4-a716-446655440004',
-        action: 'swap',
-        old_location: 'Head Office IT Support',
-        new_location: 'Head Office NOC',
-        old_status: 'active',
-        new_status: 'active',
-        user_id: '550e8400-e29b-41d4-a716-446655440002',
+        action: 'created',
+        user_id: '550e8400-e29b-41d4-a716-446655440001',
+        description: 'Monitor created and linked to Operations Control Unit A',
+        item_name: 'MON-HQ-001',
+        item_qr: 'MON-HQ-001',
     },
     {
         id: 'dd0e8400-e29b-41d4-a716-446655440002',
-        asset_id: '990e8400-e29b-41d4-a716-446655440002',
-        action: 'move',
-        old_location: 'Head Office NOC',
-        new_location: 'Head Office IT Support',
-        old_status: 'active',
-        new_status: 'active',
-        user_id: '550e8400-e29b-41d4-a716-446655440005',
+        asset_id: '990e8400-e29b-41d4-a716-446655440005',
+        action: 'created',
+        user_id: '550e8400-e29b-41d4-a716-446655440002',
+        description: 'Backup monitor created and linked to Operations Control Unit A',
+        item_name: 'MON-HQ-002',
+        item_qr: 'MON-HQ-002',
     },
     {
         id: 'dd0e8400-e29b-41d4-a716-446655440003',
-        asset_id: '990e8400-e29b-41d4-a716-446655440005',
-        action: 'repair',
-        old_location: 'Head Office IT Support',
-        new_location: 'Head Office IT Support',
-        old_status: 'active',
-        new_status: 'repair',
-        user_id: '550e8400-e29b-41d4-a716-446655440004',
-    },
-    {
-        id: 'dd0e8400-e29b-41d4-a716-446655440004',
         asset_id: '990e8400-e29b-41d4-a716-446655440006',
-        action: 'update',
-        old_location: 'Warehouse A Receiving',
-        new_location: 'Warehouse A Receiving',
-        old_status: 'inactive',
-        new_status: 'active',
-        user_id: '550e8400-e29b-41d4-a716-446655440002',
+        action: 'created',
+        user_id: '550e8400-e29b-41d4-a716-446655440005',
+        description: 'Help desk monitor created (currently in maintenance)',
+        item_name: 'MON-HQ-003',
+        item_qr: 'MON-HQ-003',
+    },
+    // Activity logs from reseed-devices.js
+    {
+        id: 'aa0e8400-e29b-41d4-a716-446655440001',
+        action: 'created',
+        asset_id: '770e8400-e29b-41d4-a716-446655440001',
+        user_id: '550e8400-e29b-41d4-a716-446655440001',
+        description: 'Created unit "Server Room Control Unit Alpha" (UNIT-SR-CTRL-001) with status: active at Head Office NOC',
+        item_name: 'UNIT-SR-CTRL-001',
+        item_qr: 'UNIT-SR-CTRL-001',
     },
     {
-        id: 'dd0e8400-e29b-41d4-a716-446655440005',
-        asset_id: '990e8400-e29b-41d4-a716-446655440001',
-        action: 'move',
-        old_location: 'Head Office NOC',
-        new_location: 'Head Office NOC',
-        old_status: 'active',
-        new_status: 'active',
+        id: 'aa0e8400-e29b-41d4-a716-446655440002',
+        action: 'created',
+        asset_id: '770e8400-e29b-41d4-a716-446655440002',
+        user_id: '550e8400-e29b-41d4-a716-446655440002',
+        description: 'Created unit "Workstation Beta - IT Support" (UNIT-IT-WS-002) with status: active at Head Office IT Support',
+        item_name: 'UNIT-IT-WS-002',
+        item_qr: 'UNIT-IT-WS-002',
+    },
+    {
+        id: 'aa0e8400-e29b-41d4-a716-446655440003',
+        action: 'created',
+        asset_id: '770e8400-e29b-41d4-a716-446655440003',
+        user_id: '550e8400-e29b-41d4-a716-446655440004',
+        description: 'Created unit "Warehouse Logistics Terminal Gamma" (UNIT-WH-LOG-003) with status: active at Warehouse A Receiving',
+        item_name: 'UNIT-WH-LOG-003',
+        item_qr: 'UNIT-WH-LOG-003',
+    },
+    {
+        id: 'aa0e8400-e29b-41d4-a716-446655440004',
+        action: 'created',
+        asset_id: '770e8400-e29b-41d4-a716-446655440004',
+        user_id: '550e8400-e29b-41d4-a716-446655440003',
+        description: 'Created unit "Branch Dashboard Unit Delta" (UNIT-BR-DASH-004) with status: maintenance at Branch Support Lab',
+        item_name: 'UNIT-BR-DASH-004',
+        item_qr: 'UNIT-BR-DASH-004',
+    },
+    {
+        id: 'aa0e8400-e29b-41d4-a716-446655440005',
+        action: 'created',
+        asset_id: '770e8400-e29b-41d4-a716-446655440005',
+        user_id: '550e8400-e29b-41d4-a716-446655440005',
+        description: 'Created unit "Content Creation Workstation Epsilon" (UNIT-CC-WS-005) with status: active at Head Office IT Support',
+        item_name: 'UNIT-CC-WS-005',
+        item_qr: 'UNIT-CC-WS-005',
+    },
+    {
+        id: 'bb0e8400-e29b-41d4-a716-446655440001',
+        action: 'created',
+        asset_id: '880e8400-e29b-41d4-a716-446655440001',
         user_id: '550e8400-e29b-41d4-a716-446655440001',
+        description: 'Created monitor "4K Primary Monitor - Server Room" (MON-SR-4K-001) linked to Server Room Control Unit Alpha',
+        item_name: 'MON-SR-4K-001',
+        item_qr: 'MON-SR-4K-001',
+    },
+    {
+        id: 'bb0e8400-e29b-41d4-a716-446655440002',
+        action: 'created',
+        asset_id: '880e8400-e29b-41d4-a716-446655440002',
+        user_id: '550e8400-e29b-41d4-a716-446655440002',
+        description: 'Created monitor "Secondary Monitor - Server Room Backup" (MON-SR-2K-002) linked to Server Room Control Unit Alpha',
+        item_name: 'MON-SR-2K-002',
+        item_qr: 'MON-SR-2K-002',
+    },
+    {
+        id: 'bb0e8400-e29b-41d4-a716-446655440003',
+        action: 'created',
+        asset_id: '880e8400-e29b-41d4-a716-446655440003',
+        user_id: '550e8400-e29b-41d4-a716-446655440004',
+        description: 'Created monitor "IT Support Monitor - Technical Workstation" (MON-IT-WS-003) linked to Workstation Beta',
+        item_name: 'MON-IT-WS-003',
+        item_qr: 'MON-IT-WS-003',
+    },
+    {
+        id: 'bb0e8400-e29b-41d4-a716-446655440004',
+        action: 'created',
+        asset_id: '880e8400-e29b-41d4-a716-446655440004',
+        user_id: '550e8400-e29b-41d4-a716-446655440003',
+        description: 'Created monitor "Warehouse Display Terminal" (MON-WH-LCD-004) linked to Warehouse Logistics Terminal Gamma',
+        item_name: 'MON-WH-LCD-004',
+        item_qr: 'MON-WH-LCD-004',
+    },
+    {
+        id: 'bb0e8400-e29b-41d4-a716-446655440005',
+        action: 'created',
+        asset_id: '880e8400-e29b-41d4-a716-446655440005',
+        user_id: '550e8400-e29b-41d4-a716-446655440005',
+        description: 'Created monitor "Branch Dashboard Display" (MON-BR-OLED-005) linked to Branch Dashboard Unit Delta',
+        item_name: 'MON-BR-OLED-005',
+        item_qr: 'MON-BR-OLED-005',
+    },
+    {
+        id: 'bb0e8400-e29b-41d4-a716-446655440006',
+        action: 'created',
+        asset_id: '880e8400-e29b-41d4-a716-446655440006',
+        user_id: '550e8400-e29b-41d4-a716-446655440006',
+        description: 'Created monitor "Creative Studio Monitor - Primary" (MON-CC-PRI-006) linked to Content Creation Workstation Epsilon',
+        item_name: 'MON-CC-PRI-006',
+        item_qr: 'MON-CC-PRI-006',
+    },
+    {
+        id: 'bb0e8400-e29b-41d4-a716-446655440007',
+        action: 'created',
+        asset_id: '880e8400-e29b-41d4-a716-446655440007',
+        user_id: '550e8400-e29b-41d4-a716-446655440007',
+        description: 'Created monitor "Creative Studio Monitor - Secondary" (MON-CC-SEC-007) linked to Content Creation Workstation Epsilon',
+        item_name: 'MON-CC-SEC-007',
+        item_qr: 'MON-CC-SEC-007',
     },
 ]
 
@@ -482,17 +561,12 @@ async function seed() {
 
         const profileRepo = AppDataSource.getRepository(Profile)
         const locationRepo = AppDataSource.getRepository(Location)
-        const unitRepo = AppDataSource.getRepository(Unit)
-        const monitorRepo = AppDataSource.getRepository(Monitor)
         const assetRepo = AppDataSource.getRepository(Asset)
-        const monitorAssignmentRepo = AppDataSource.getRepository(MonitorAssignment)
-        const assetMovementRepo = AppDataSource.getRepository(AssetMovement)
-        const assetStatusHistoryRepo = AppDataSource.getRepository(AssetStatusHistory)
         const activityLogRepo = AppDataSource.getRepository(ActivityLog)
 
         await AppDataSource.transaction(async (manager) => {
             await manager.query(
-                'TRUNCATE TABLE activity_logs, asset_status_history, asset_movements, monitor_assignments, monitors, assets, units, locations, profiles RESTART IDENTITY CASCADE',
+                'TRUNCATE TABLE activity_logs, assets, locations, profiles RESTART IDENTITY CASCADE',
             )
 
             const profilesWithHashes = []
@@ -512,122 +586,43 @@ async function seed() {
             const profileMap = mapById(profilesWithHashes)
             const savedLocations = await manager.getRepository(Location).save(seedLocations)
 
-            const savedUnits = await manager.getRepository(Unit).save(
-                seedUnits.map((unit) => ({
-                    ...unit,
-                    creator: profileMap.get(unit.created_by),
-                })),
-            )
-            const unitMap = mapById(savedUnits)
-
-            const savedMonitors = await manager.getRepository(Monitor).save(
-                seedMonitors.map((monitor) => ({
-                    ...monitor,
-                    creator: profileMap.get(monitor.created_by),
-                    linkedUnit: unitMap.get(monitor.linked_unit_id),
-                })),
-            )
-
-            const savedUnitAssets = await manager.getRepository(Asset).save(
-                seedAssets
-                    .filter((asset) => asset.type === 'unit')
-                    .map((asset) => ({
-                        ...asset,
-                        creator: profileMap.get(asset.created_by),
-                    })),
-            )
-            const unitAssetMap = mapById(savedUnitAssets)
-
-            const savedMonitorAssets = await manager.getRepository(Asset).save(
-                seedAssets
-                    .filter((asset) => asset.type === 'monitor')
-                    .map((asset) => ({
-                        ...asset,
-                        creator: profileMap.get(asset.created_by),
-                        parent: asset.parent_id ? unitAssetMap.get(asset.parent_id) : null,
-                    })),
-            )
-
-            const assetMap = mapById([...savedUnitAssets, ...savedMonitorAssets])
-
-            await manager.getRepository(MonitorAssignment).save(
-                seedMonitorAssignments.map((assignment) => ({
-                    id: assignment.id,
-                    assigned_by: assignment.assigned_by,
-                    unassigned_at: assignment.unassigned_at || null,
-                    reason: assignment.reason,
-                    is_current: assignment.is_current,
-                    monitor: assetMap.get(assignment.monitor_id),
-                    unit: assetMap.get(assignment.unit_id),
-                })),
-            )
-
-            await manager.getRepository(AssetMovement).save(
-                seedAssetMovements.map((movement) => ({
-                    id: movement.id,
-                    asset: assetMap.get(movement.asset_id),
-                    from_location_id: movement.from_location_id,
-                    to_location_id: movement.to_location_id,
-                    moved_by: movement.moved_by,
-                    source: movement.source,
-                    notes: movement.notes,
-                    user: profileMap.get(movement.moved_by),
-                })),
-            )
-
-            await manager.getRepository(AssetStatusHistory).save(
-                seedAssetStatusHistory.map((history) => ({
-                    id: history.id,
-                    asset: assetMap.get(history.asset_id),
-                    old_status: history.old_status,
-                    new_status: history.new_status,
-                    changed_by: history.changed_by,
-                    source: history.source,
-                    reason: history.reason,
-                    user: profileMap.get(history.changed_by),
+            const savedAssets = await manager.getRepository(Asset).save(
+                seedAssets.map((asset) => ({
+                    ...asset,
+                    creator: profileMap.get(asset.created_by),
                 })),
             )
 
             await manager.getRepository(ActivityLog).save(
                 seedActivityLogs.map((log) => ({
-                    id: log.id,
-                    asset: assetMap.get(log.asset_id),
-                    action: log.action,
-                    old_location: log.old_location,
-                    new_location: log.new_location,
-                    old_status: log.old_status,
-                    new_status: log.new_status,
-                    user_id: log.user_id,
+                    ...log,
                     user: profileMap.get(log.user_id),
                 })),
             )
 
-            console.log(`Seeded ${profilesWithHashes.length} profiles`)
-            console.log(`Seeded ${savedLocations.length} locations`)
-            console.log(`Seeded ${savedUnits.length} units`)
-            console.log(`Seeded ${savedMonitors.length} monitors`)
-            console.log(`Seeded ${savedUnitAssets.length + savedMonitorAssets.length} assets`)
-            console.log(`Seeded ${seedMonitorAssignments.length} monitor assignments`)
-            console.log(`Seeded ${seedAssetMovements.length} asset movements`)
-            console.log(`Seeded ${seedAssetStatusHistory.length} asset status history rows`)
-            console.log(`Seeded ${seedActivityLogs.length} activity logs`)
+            console.log(`✓ Seeded ${profilesWithHashes.length} profiles`)
+            console.log(`✓ Seeded ${savedLocations.length} locations`)
+            console.log(`✓ Seeded ${savedAssets.length} assets (units + monitors)`)
+            console.log(`✓ Seeded ${seedActivityLogs.length} activity logs`)
 
-            console.log('Sample credentials:')
+            console.log('\nSample credentials:')
             console.log('  amara.santos@infini-stock.com / admin123')
             console.log('  james.carter@infini-stock.com / manager123')
             console.log('  miguel.torres@infini-stock.com / tech123')
             console.log('  john.reyes@infini-stock.com / staff123')
             console.log('  david.brooks@infini-stock.com / viewer123')
 
-            console.log('Primary sample locations:')
+            console.log('\nPrimary locations:')
             savedLocations.forEach((location) => {
                 console.log(`  ${location.code}: ${location.name}`)
             })
 
-            console.log('Seeded asset QR codes:')
-                ;[...savedUnitAssets, ...savedMonitorAssets].forEach((asset) => {
-                    console.log(`  ${asset.qr_code} (${asset.type})`)
-                })
+            console.log('\nSeeded assets:')
+            savedAssets.forEach((asset) => {
+                const type = asset.type === 'unit' ? 'UNIT' : 'MONITOR'
+                const linked = asset.linked_unit_id ? ` → linked to unit` : ''
+                console.log(`  ${asset.qr_code} [${type}] ${asset.status}${linked}`)
+            })
         })
 
         process.exit(0)

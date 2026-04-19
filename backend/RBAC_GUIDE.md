@@ -42,7 +42,7 @@ manager → technician → staff → viewer
 - `asset:read` - View assets (all roles)
 - `asset:update` - Edit asset details (admin, manager, technician)
 - `asset:delete` - Delete assets (admin only)
-- `asset:scan` - Scan assets with QR code (admin, manager, technician)
+- `asset:scan` - Scan assets with QR code (admin, manager, technician, staff, viewer)
 - `asset:move` - Update asset location (admin, manager, technician)
 - `asset:swap` - Swap monitors on units (admin, manager, technician)
 
@@ -63,11 +63,11 @@ manager → technician → staff → viewer
 - `qr:view` - View QR codes (all roles)
 
 ### User Management
-- `user:create` - Create users (admin only)
-- `user:read` - View users (admin only)
-- `user:update` - Edit users (admin only)
+- `user:create` - Create staff/technician users (admin, manager); create admins (admin only)
+- `user:read` - View users (admin, manager can view all; staff can view own)
+- `user:update` - Edit users (admin can edit all; manager can edit staff/technician only)
 - `user:delete` - Delete users (admin only)
-- `user:assign_role` - Change user roles (admin only)
+- `user:assign_role` - Change user roles (admin only; manager cannot assign roles)
 
 ### Reports
 - `report:view` - View reports (admin, manager)

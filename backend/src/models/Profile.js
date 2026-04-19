@@ -7,6 +7,7 @@ module.exports = new EntitySchema({
         id: {
             type: 'uuid',
             primary: true,
+            generated: 'uuid',
         },
         full_name: {
             type: 'varchar',
@@ -50,13 +51,16 @@ module.exports = new EntitySchema({
             nullable: true,
         },
         created_at: {
-            type: 'timestamp',
-            createDate: true,
+            type: 'timestamp with time zone',
+            default: () => 'CURRENT_TIMESTAMP',
+            createDate: false,
             update: false,
         },
         updated_at: {
-            type: 'timestamp',
-            updateDate: true,
+            type: 'timestamp with time zone',
+            default: () => 'CURRENT_TIMESTAMP',
+            onUpdate: 'CURRENT_TIMESTAMP',
+            updateDate: false,
         },
     },
 })

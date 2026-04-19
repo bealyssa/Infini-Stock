@@ -27,7 +27,7 @@ const PERMISSIONS = {
     'asset:read': ['admin', 'manager', 'technician', 'staff', 'viewer'],
     'asset:update': ['admin', 'manager', 'technician'],
     'asset:delete': ['admin'],
-    'asset:scan': ['admin', 'manager', 'technician'],
+    'asset:scan': ['admin', 'manager', 'technician', 'staff', 'viewer'],
     'asset:move': ['admin', 'manager', 'technician'],
     'asset:swap': ['admin', 'manager', 'technician'],
 
@@ -47,10 +47,12 @@ const PERMISSIONS = {
     'qr:generate': ['admin', 'manager', 'technician'],
     'qr:view': ['admin', 'manager', 'technician', 'staff', 'viewer'],
 
-    // User Management (Admin only)
-    'user:create': ['admin'],
-    'user:read': ['admin'],
-    'user:update': ['admin'],
+    // User Management
+    // Managers can create/read/update staff & technician users only
+    // Only admins can manage admin users and assign roles
+    'user:create': ['admin', 'manager'],
+    'user:read': ['admin', 'manager'],
+    'user:update': ['admin', 'manager'],
     'user:delete': ['admin'],
     'user:assign_role': ['admin'],
 

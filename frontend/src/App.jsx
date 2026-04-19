@@ -5,7 +5,6 @@ import Header from './components/Header'
 import Dashboard from './pages/Dashboard'
 import SystemUnits from './pages/SystemUnits'
 import Monitors from './pages/Monitors'
-import QRGenerator from './pages/QRGenerator'
 import ActivityLogs from './pages/ActivityLogs'
 import Users from './pages/Users'
 import Login from './pages/Login'
@@ -77,7 +76,6 @@ function App() {
                                             <Route path="/" element={<Dashboard />} />
                                             <Route path="/units" element={<SystemUnits />} />
                                             <Route path="/monitors" element={<Monitors />} />
-                                            <Route path="/qr-generator" element={<QRGenerator />} />
                                             <Route path="/logs" element={<ActivityLogs />} />
                                             <Route path="/admin/users" element={<Users />} />
                                             <Route path="*" element={<Navigate to="/" replace />} />

@@ -8,6 +8,10 @@ function requireEnv(name) {
     return value
 }
 
+function isEmailConfigured() {
+    return process.env.MAIL_USER && process.env.MAIL_PASS
+}
+
 function createTransport() {
     const user = requireEnv('MAIL_USER')
     const pass = requireEnv('MAIL_PASS')
@@ -29,6 +33,13 @@ function getFromAddress() {
 }
 
 async function sendVerificationEmail({ to, fullName, verifyUrl }) {
+    // In development mode, skip email if not configured
+    if (!isEmailConfigured()) {
+        console.log('[DEV MODE] Email not configured, skipping verification email send')
+        console.log(`[DEV MODE] Verification URL would be: ${verifyUrl}`)
+        return
+    }
+
     const transporter = createTransport()
     const from = getFromAddress()
 
@@ -67,4 +78,5 @@ async function sendVerificationEmail({ to, fullName, verifyUrl }) {
 
 module.exports = {
     sendVerificationEmail,
+    isEmailConfigured,
 }

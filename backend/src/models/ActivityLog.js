@@ -44,17 +44,30 @@ module.exports = new EntitySchema({
             type: 'uuid',
             nullable: true,
         },
-        monitor_id: {
-            type: 'uuid',
+        deleted_item_name: {
+            type: 'varchar',
+            length: 255,
             nullable: true,
         },
-        unit_id: {
-            type: 'uuid',
+        deleted_item_qr: {
+            type: 'varchar',
+            length: 255,
+            nullable: true,
+        },
+        item_name: {
+            type: 'varchar',
+            length: 255,
+            nullable: true,
+        },
+        item_qr: {
+            type: 'varchar',
+            length: 255,
             nullable: true,
         },
         timestamp: {
-            type: 'timestamp',
-            createDate: true,
+            type: 'timestamp with time zone',
+            default: () => 'CURRENT_TIMESTAMP',
+            createDate: false,
             update: false,
         },
     },
@@ -64,21 +77,7 @@ module.exports = new EntitySchema({
             target: 'Asset',
             joinColumn: { name: 'asset_id' },
             nullable: true,
-            onDelete: 'CASCADE',
-        },
-        monitor: {
-            type: 'many-to-one',
-            target: 'Monitor',
-            joinColumn: { name: 'monitor_id' },
-            nullable: true,
-            onDelete: 'CASCADE',
-        },
-        unit: {
-            type: 'many-to-one',
-            target: 'Unit',
-            joinColumn: { name: 'unit_id' },
-            nullable: true,
-            onDelete: 'CASCADE',
+            onDelete: 'SET NULL',
         },
         user: {
             type: 'many-to-one',

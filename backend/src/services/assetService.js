@@ -240,12 +240,19 @@ async function listActivityLogs({ limit = 100, userId, includeAll = false, filte
     const finalWhere = Object.keys(where).length > 0 ? where : undefined
     console.log(`[AssetService] Final where clause:`, finalWhere)
 
-    const results = await activityRepo.find({
-        where: finalWhere,
-        relations: { asset: true, monitor: true, unit: true, user: true },
-        order: { timestamp: 'DESC' },
-        take: limit,
-    })
+    const queryBuilder = activityRepo.createQueryBuilder('log')
+        .leftJoinAndSelect('log.asset', 'asset')
+        .leftJoinAndSelect('log.user', 'user')
+        .orderBy('log.timestamp', 'DESC')
+        .take(limit)
+
+    if (finalWhere) {
+        Object.entries(finalWhere).forEach(([key, value]) => {
+            queryBuilder.andWhere(`log.${key} = :${key}`, { [key]: value })
+        })
+    }
+
+    const results = await queryBuilder.getMany()
 
     console.log(`[AssetService] Query returned ${results.length} logs`)
 
@@ -284,19 +291,26 @@ async function upsertAssetMeta({ qrCode, type, imageData, description, userId })
         return { asset: created.asset }
     }
 
+    // Track if anything changed
+    const imageDataChanged = existing.image_data !== (imageData || null)
+    const descriptionChanged = existing.description !== ((description && String(description).trim()) || null)
+
     existing.image_data = imageData || null
     existing.description = (description && String(description).trim()) || null
     await assetRepo.save(existing)
 
-    await createActivityLog({
-        asset: existing,
-        action: 'update',
-        old_location: existing.location,
-        new_location: existing.location,
-        old_status: existing.status,
-        new_status: existing.status,
-        user_id: userId,
-    })
+    // Only create activity log if something actually changed
+    if (imageDataChanged || descriptionChanged) {
+        await createActivityLog({
+            asset: existing,
+            action: 'update',
+            old_location: existing.location,
+            new_location: existing.location,
+            old_status: existing.status,
+            new_status: existing.status,
+            user_id: userId,
+        })
+    }
 
     const refreshed = await assetRepo.findOne({
         where: { qr_code: qrCode },

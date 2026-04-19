@@ -61,10 +61,18 @@ async function getAllUsers(req, res) {
 async function createUser(req, res) {
     try {
         const { full_name, email, password, role } = req.body
+        const userRole = req.auth?.role
 
         if (!full_name || !email || !password) {
             return res.status(400).json({
                 message: 'Missing required fields: full_name, email, password',
+            })
+        }
+
+        // Managers can only create staff and technician users
+        if (userRole === 'manager' && role && ['admin', 'manager'].includes(role)) {
+            return res.status(403).json({
+                message: 'Managers can only create staff and technician users',
             })
         }
 
@@ -114,19 +122,25 @@ async function createUser(req, res) {
             saved.email,
         )}&token=${encodeURIComponent(verificationToken)}`
 
+        let verificationEmailSent = false
         try {
             await sendVerificationEmail({
                 to: saved.email,
                 fullName: saved.full_name,
                 verifyUrl,
             })
+            verificationEmailSent = true
         } catch (mailError) {
-            // If email fails, roll back the user creation to avoid inactive orphan accounts.
-            await profileRepo.remove(saved)
-            console.error('Send verification email error:', mailError)
-            return res.status(500).json({
-                message: 'Failed to send verification email. User was not created.',
-            })
+            // If email fails in production, roll back the user creation to avoid inactive orphan accounts.
+            if (process.env.NODE_ENV === 'production') {
+                await profileRepo.remove(saved)
+                console.error('Send verification email error:', mailError)
+                return res.status(500).json({
+                    message: 'Failed to send verification email. User was not created.',
+                })
+            }
+            // In development, log but don't fail
+            console.error('Send verification email error (dev mode - continuing):', mailError)
         }
 
         return res.status(201).json({
@@ -136,7 +150,7 @@ async function createUser(req, res) {
             role: saved.role,
             is_active: saved.is_active,
             created_at: saved.created_at,
-            verification_sent: true,
+            verification_sent: verificationEmailSent,
         })
     } catch (error) {
         console.error('Create user error:', error)
@@ -152,12 +166,27 @@ async function updateUser(req, res) {
     try {
         const { id } = req.params
         const { full_name, email, password, role, is_active } = req.body
+        const userRole = req.auth?.role
 
         const profileRepo = AppDataSource.getRepository(Profile)
 
         const user = await profileRepo.findOne({ where: { id } })
         if (!user) {
             return res.status(404).json({ message: 'User not found' })
+        }
+
+        // Managers can only edit staff and technician users
+        if (userRole === 'manager' && (user.role === 'admin' || user.role === 'manager')) {
+            return res.status(403).json({
+                message: 'Managers can only edit staff and technician users',
+            })
+        }
+
+        // Managers cannot change a user's role to admin or manager
+        if (userRole === 'manager' && role && ['admin', 'manager'].includes(role)) {
+            return res.status(403).json({
+                message: 'Managers cannot assign admin or manager roles',
+            })
         }
 
         // Update fields

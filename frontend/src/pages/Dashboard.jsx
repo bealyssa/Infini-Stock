@@ -28,18 +28,19 @@ import { activityApi, assetApi } from '../api'
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { Button } from '../components/ui/Button'
+import { isViewOnly } from '../lib/permissions'
 import { ChangeDetailsModal } from '../components/ActionModals'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table'
 import FullPageLoader from '../components/FullPageLoader'
 import TablePagination from '../components/TablePagination'
 
-const STATUS_ORDER = ['active', 'repair', 'broken', 'inactive', 'other']
+const STATUS_ORDER = ['active', 'repair', 'broken', 'inactive', 'maintenance']
 const STATUS_LABELS = {
     active: 'Active',
     repair: 'Repair',
     broken: 'Broken',
     inactive: 'Inactive',
-    other: 'Other',
+    maintenance: 'Maintenance',
 }
 
 const CHART_COLORS = {
@@ -50,6 +51,12 @@ const CHART_COLORS = {
     lavender700: '#7e22ce',
     dark800: '#171717',
     dark600: '#2d2d2d',
+    // Status-specific colors
+    statusActive: '#10b981',     // Green - working/operational
+    statusRepair: '#f59e0b',     // Orange - needs attention
+    statusBroken: '#ef4444',     // Red - not working
+    statusInactive: '#6b7280',   // Gray - not in use
+    statusMaintenance: '#8b5cf6',      // Purple - under maintenance
 }
 
 function toDateKeyLocal(date) {
@@ -85,6 +92,7 @@ function parseInputDate(value) {
 }
 
 function Dashboard() {
+    const viewOnly = isViewOnly()
     const [assets, setAssets] = useState([])
     const [logs, setLogs] = useState([])
     const [loading, setLoading] = useState(true)
@@ -94,6 +102,7 @@ function Dashboard() {
     const [selectedChangeLog, setSelectedChangeLog] = useState(null)
     const [changeDetailsOpen, setChangeDetailsOpen] = useState(false)
 
+    // Auto-refresh every 30 seconds for real-time activity monitoring
     useEffect(() => {
         const fetchData = async () => {
             try {
@@ -113,7 +122,14 @@ function Dashboard() {
                 setRefreshing(false)
             }
         }
+
+        // Initial fetch
         fetchData()
+
+        // Auto-refresh every 30 seconds
+        const intervalId = setInterval(fetchData, 30000)
+
+        return () => clearInterval(intervalId)
     }, [])
 
     const handleRefresh = async () => {
@@ -151,11 +167,20 @@ function Dashboard() {
         return result
     }
 
-    const LOG_PAGE_SIZE = 5
+    const LOG_PAGE_SIZE = 10 // Show 10 items per page for better overview
     const [logPage, setLogPage] = useState(0)
 
     const filteredLogs = useMemo(() => {
-        return logs || []
+        if (!logs || logs.length === 0) return []
+
+        // Filter to show only activities from the last 24 hours
+        const now = new Date()
+        const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+
+        return logs.filter(log => {
+            const logTime = new Date(log.timestamp)
+            return logTime >= twentyFourHoursAgo
+        })
     }, [logs])
 
     useEffect(() => {
@@ -185,37 +210,27 @@ function Dashboard() {
             return acc
         }, {})
 
-        return STATUS_ORDER.filter((status) => counts[status]).map((status) => ({
+        return STATUS_ORDER.map((status) => ({
             name: STATUS_LABELS[status] ?? status,
-            value: counts[status],
+            value: counts[status] || 0,
             status,
         }))
     }, [assets])
 
-    const inventoryByLocationData = useMemo(() => {
+    const topLocationsData = useMemo(() => {
         const byLocation = new Map()
         for (const asset of assets) {
             const location = asset?.location?.trim() || 'Unassigned'
-            const type = asset?.type || 'other'
             if (!byLocation.has(location)) {
-                byLocation.set(location, {
-                    location,
-                    unit: 0,
-                    monitor: 0,
-                    other: 0,
-                    total: 0,
-                })
+                byLocation.set(location, 0)
             }
-            const row = byLocation.get(location)
-            if (type === 'unit') row.unit += 1
-            else if (type === 'monitor') row.monitor += 1
-            else row.other += 1
-            row.total += 1
+            byLocation.set(location, byLocation.get(location) + 1)
         }
 
-        return Array.from(byLocation.values())
-            .sort((a, b) => b.total - a.total)
-            .map(({ total, ...rest }) => rest)
+        return Array.from(byLocation.entries())
+            .map(([location, count]) => ({ location, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5)
     }, [assets])
 
     const activityOverTimeData = useMemo(() => {
@@ -360,8 +375,13 @@ function Dashboard() {
                 </div>
 
                 {/* Charts + Recent Activity in one grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 mb-8 lg:[grid-template-rows:auto_auto] items-stretch">
-                    <Card className="lg:col-span-2 lg:row-start-1 flex flex-col min-h-[318px]">
+                <div className={`grid gap-5 mb-8 items-stretch ${
+                    viewOnly 
+                        ? 'grid-cols-1 lg:grid-cols-2' 
+                        : 'grid-cols-1 lg:grid-cols-3 lg:[grid-template-rows:auto_auto]'
+                }`}>
+                    {!viewOnly && (
+                        <Card className="lg:col-span-2 lg:row-start-1 flex flex-col min-h-[318px]">
                         <CardHeader className="pb-3 pt-4 px-5">
                             <div>
                                 <CardTitle className="text-lg font-semibold text-white flex items-center gap-2">
@@ -447,8 +467,11 @@ function Dashboard() {
                             )}
                         </CardContent>
                     </Card>
+                    )}
 
-                    <Card className="lg:col-start-3 lg:row-start-1 h-full flex flex-col min-h-[318px]">
+                    <Card className={`h-full flex flex-col min-h-[318px] ${
+                        !viewOnly ? 'lg:col-start-3 lg:row-start-1' : ''
+                    }`}>
                         <CardHeader className="pb-3 pt-4 px-5">
                             <div>
                                 <CardTitle className="text-lg font-semibold text-white flex items-center gap-2">
@@ -504,18 +527,18 @@ function Dashboard() {
                                             >
                                                 {statusChartData.map((entry) => {
                                                     const colorByStatus = {
-                                                        active: CHART_COLORS.lavender500,
-                                                        repair: CHART_COLORS.lavender700,
-                                                        broken: CHART_COLORS.lavender600,
-                                                        inactive: CHART_COLORS.lavender400,
-                                                        other: CHART_COLORS.lavender300,
+                                                        active: CHART_COLORS.statusActive,
+                                                        repair: CHART_COLORS.statusRepair,
+                                                        broken: CHART_COLORS.statusBroken,
+                                                        inactive: CHART_COLORS.statusInactive,
+                                                        maintenance: CHART_COLORS.statusMaintenance,
                                                     }
                                                     return (
                                                         <Cell
                                                             key={entry.status}
                                                             fill={
                                                                 colorByStatus[entry.status] ||
-                                                                CHART_COLORS.lavender400
+                                                                CHART_COLORS.statusMaintenance
                                                             }
                                                         />
                                                     )
@@ -529,8 +552,9 @@ function Dashboard() {
                     </Card>
 
                     {/* Recent Activity - aligned with Location (same row) */}
-                    <Card className="lg:col-span-2 lg:row-start-2 h-full flex flex-col min-h-[320px]">
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 pt-4 px-5">
+                    {!viewOnly && (
+                        <Card className="lg:col-span-2 lg:row-start-2 flex flex-col max-h-[500px]">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3 pt-4 px-5 flex-shrink-0">
                             <div className="flex items-center gap-2">
                                 <Activity className="text-lavender-400" size={18} />
                                 <div>
@@ -540,7 +564,7 @@ function Dashboard() {
                             </div>
                             <Badge className="bg-lavender-600 text-white text-xs">Live</Badge>
                         </CardHeader>
-                        <CardContent className="p-0 flex-1 min-h-0">
+                        <CardContent className="p-0 flex-1 min-h-0 overflow-y-auto">
                             {loading ? (
                                 <div className="py-12 text-center">
                                     <div className="inline-block animate-spin">
@@ -634,32 +658,39 @@ function Dashboard() {
                                 </div>
                             ) : (
                                 <p className="py-12 text-center text-gray-500 text-sm">
-                                    No activity yet. Start tracking assets!
+                                    No activity in the last 24 hours
                                 </p>
                             )}
-
-                            {filteredLogs.length > LOG_PAGE_SIZE ? (
-                                <div className="flex justify-end px-5 py-4 border-t border-white/10 bg-dark-800/50">
-                                    <TablePagination
-                                        align="right"
-                                        currentPage={logPage + 1}
-                                        totalPages={totalLogPages}
-                                        onPageChange={(page) => setLogPage(page - 1)}
-                                    />
-                                </div>
-                            ) : null}
                         </CardContent>
+                        {filteredLogs.length > LOG_PAGE_SIZE ? (
+                            <div className="flex justify-end px-5 py-4 border-t border-[#3d2e5c] bg-[#1a1530] flex-shrink-0">
+                                <TablePagination
+                                    align="right"
+                                    currentPage={logPage + 1}
+                                    totalPages={totalLogPages}
+                                    onPageChange={(page) => setLogPage(page - 1)}
+                                />
+                            </div>
+                        ) : null}
+                        {filteredLogs.length > 0 && (
+                            <div className="text-xs text-gray-400 px-5 py-2 border-t border-[#3d2e5c] text-center bg-[#1a1530] flex-shrink-0">
+                                Showing last 24 hours • Auto-refresh every 30s
+                            </div>
+                        )}
                     </Card>
+                    )}
 
-                    <Card className="lg:col-start-3 lg:row-start-2 h-full flex flex-col min-h-[320px]">
+                    <Card className={`h-full flex flex-col min-h-[320px] ${
+                        !viewOnly ? 'lg:col-start-3 lg:row-start-2' : ''
+                    }`}>
                         <CardHeader className="pb-3 pt-4 px-5">
                             <div>
                                 <CardTitle className="text-lg font-semibold text-white flex items-center gap-2">
                                     <BarChart3 size={18} className="text-lavender-400" />
-                                    Location
+                                    Top Locations
                                 </CardTitle>
                                 <p className="mt-1 text-sm text-gray-300/80">
-                                    Assets grouped by location
+                                    Top 5 locations by asset count
                                 </p>
                             </div>
                         </CardHeader>
@@ -672,7 +703,7 @@ function Dashboard() {
                                 <div className="h-full flex items-center justify-center text-red-400 text-sm">
                                     Error: {error}
                                 </div>
-                            ) : inventoryByLocationData.length === 0 ? (
+                            ) : topLocationsData.length === 0 ? (
                                 <div className="h-full flex items-center justify-center text-gray-500 text-sm">
                                     No locations
                                 </div>
@@ -680,7 +711,7 @@ function Dashboard() {
                                 <div className="h-full">
                                     <ResponsiveContainer width="100%" height="100%">
                                         <BarChart
-                                            data={inventoryByLocationData}
+                                            data={topLocationsData}
                                             margin={{ top: 10, right: 14, left: -18, bottom: 30 }}
                                         >
                                             <CartesianGrid
@@ -713,24 +744,9 @@ function Dashboard() {
                                                 labelStyle={{ color: '#9ca3af' }}
                                             />
                                             <Bar
-                                                dataKey="unit"
-                                                stackId="a"
-                                                name="Units"
+                                                dataKey="count"
+                                                name="Assets"
                                                 fill={CHART_COLORS.lavender500}
-                                                radius={[4, 4, 0, 0]}
-                                            />
-                                            <Bar
-                                                dataKey="monitor"
-                                                stackId="a"
-                                                name="Monitors"
-                                                fill={CHART_COLORS.lavender700}
-                                                radius={[4, 4, 0, 0]}
-                                            />
-                                            <Bar
-                                                dataKey="other"
-                                                stackId="a"
-                                                name="Other"
-                                                fill={CHART_COLORS.lavender300}
                                                 radius={[4, 4, 0, 0]}
                                             />
                                         </BarChart>

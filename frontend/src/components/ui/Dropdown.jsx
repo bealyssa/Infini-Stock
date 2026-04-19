@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 
-export function Dropdown({ trigger, children }) {
+export function Dropdown({ trigger, children, dropUp = false }) {
     const [open, setOpen] = useState(false)
     const [menuStyle, setMenuStyle] = useState({})
     const triggerRef = useRef(null)
@@ -22,14 +22,27 @@ export function Dropdown({ trigger, children }) {
     useEffect(() => {
         if (open && triggerRef.current) {
             const rect = triggerRef.current.getBoundingClientRect()
+            const menuHeight = 150 // Approximate height of dropdown menu
+            const spaceBelow = window.innerHeight - rect.bottom
+
+            // Check if there's enough space below, otherwise position above
+            let top
+            if (spaceBelow < menuHeight || dropUp) {
+                // Position above the trigger
+                top = `${rect.top - menuHeight - 8}px`
+            } else {
+                // Position below the trigger (default)
+                top = `${rect.bottom + 8}px`
+            }
+
             setMenuStyle({
                 position: 'fixed',
-                top: `${rect.bottom + 8}px`,
+                top: top,
                 right: `${window.innerWidth - rect.right}px`,
                 width: '192px',
             })
         }
-    }, [open])
+    }, [open, dropUp])
 
     const handleTriggerClick = (e) => {
         e.stopPropagation()

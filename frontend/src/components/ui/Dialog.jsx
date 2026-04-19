@@ -40,14 +40,14 @@ export function DialogContent({ children, className = '' }) {
                 {/* Backdrop */}
                 <div
                     className="fixed inset-0 bg-black/50"
-                    style={{ zIndex: 9999 }}
+                    style={{ zIndex: 50000 }}
                     onClick={() => onOpenChange(false)}
                 />
 
                 {/* Modal */}
                 <div
                     className={`fixed left-1/2 top-1/2 w-[calc(100%-2rem)] sm:w-auto -translate-x-1/2 -translate-y-1/2 rounded-lg border border-[#3d2e5c] bg-[#190F2B] p-5 shadow-2xl shadow-black/70 animate-in fade-in zoom-in-95 max-h-[90vh] overflow-y-auto min-w-fit ${className}`}
-                    style={{ zIndex: 10000 }}
+                    style={{ zIndex: 50001 }}
                 >
                     <button
                         onClick={() => onOpenChange(false)}
