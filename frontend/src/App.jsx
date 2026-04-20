@@ -45,11 +45,6 @@ function App() {
         )
     }
 
-    // Protected Route Component
-    const ProtectedRoute = ({ element }) => {
-        return isAuthenticated ? element : <Navigate to="/login" replace />
-    }
-
     return (
         <Router>
             <Routes>

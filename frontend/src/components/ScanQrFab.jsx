@@ -23,7 +23,6 @@ export default function ScanQrFab() {
 
     const [busy, setBusy] = useState(false)
     const [error, setError] = useState(null)
-    const [decodedQr, setDecodedQr] = useState(null)
     const [asset, setAsset] = useState(null)
     const [printQRModalOpen, setPrintQRModalOpen] = useState(false)
     const [cameraPermission, setCameraPermission] = useState('prompt') // 'prompt' | 'granted' | 'denied'
@@ -68,7 +67,6 @@ export default function ScanQrFab() {
         setMode('camera')
         setBusy(false)
         setError(null)
-        setDecodedQr(null)
         setAsset(null)
     }
 
@@ -87,7 +85,6 @@ export default function ScanQrFab() {
         const code = (qrText || '').trim()
         if (!code) return
 
-        setDecodedQr(code)
         setError(null)
         setBusy(true)
 
@@ -114,9 +111,8 @@ export default function ScanQrFab() {
                         fullAsset = { ...fullAsset, ...unit }
                     }
                 }
-            } catch (err) {
+            } catch {
                 // If fetching full details fails, continue with basic data
-                console.warn('Could not fetch full asset details:', err)
             }
 
             setAsset(fullAsset)
@@ -214,7 +210,6 @@ export default function ScanQrFab() {
         if (!file) return
         setError(null)
         setAsset(null)
-        setDecodedQr(null)
         setBusy(true)
 
         let url = null
@@ -269,7 +264,6 @@ export default function ScanQrFab() {
                                 setMode('camera')
                                 setError(null)
                                 setAsset(null)
-                                setDecodedQr(null)
                                 // Auto-request camera permission when switching to camera mode
                                 if (cameraPermission === 'prompt') {
                                     requestCameraPermission()
@@ -287,7 +281,6 @@ export default function ScanQrFab() {
                                 setMode('upload')
                                 setError(null)
                                 setAsset(null)
-                                setDecodedQr(null)
                             }}
                         >
                             <Upload size={18} />
@@ -378,7 +371,7 @@ export default function ScanQrFab() {
                     {asset ? (
                         <div className="mt-4 rounded-lg border border-green-500/40 bg-green-500/10 px-4 py-3 text-sm text-green-200">
                             ✓ Asset detected: <span className="font-semibold">{asset.deviceName || asset.qrCode}</span>
-                            <p className="text-xs text-green-300/70 mt-1">Tap "View Details" to see full information</p>
+                            <p className="text-xs text-green-300/70 mt-1">Tap &quot;View Details&quot; to see full information</p>
                         </div>
                     ) : null}
 

@@ -1,8 +1,6 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/Dialog'
-import { Button } from './ui/Button'
 import { Badge } from './ui/Badge'
-import { Copy, ExternalLink } from 'lucide-react'
-import { useState } from 'react'
+import { Copy } from 'lucide-react'
 import QRCode from 'react-qr-code'
 
 const STATUS_LABELS = {
@@ -21,44 +19,37 @@ const STATUS_COLORS = {
     maintenance: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
 }
 
-export function AssetDetailsModal({ isOpen, onClose, asset, loading = false }) {
-    const [copied, setCopied] = useState(false)
+const formatValue = (value) => {
+    if (value === null || value === undefined || value === '') return '—'
+    return String(value)
+}
 
-    if (!asset && !loading) {
-        console.log('AssetDetailsModal: No asset data')
-    }
-
+const DetailRow = ({ label, value, copyable = false }) => {
     const copyToClipboard = (text) => {
         navigator.clipboard.writeText(text)
-        setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
     }
 
-    const formatValue = (value) => {
-        if (value === null || value === undefined || value === '') return '—'
-        return String(value)
-    }
-
-    const DetailRow = ({ label, value, copyable = false }) => {
-        const formattedValue = formatValue(value)
-        return (
-            <div className="flex items-start justify-between gap-4 border-b border-[#3d2e5c] py-3 px-4 last:border-b-0">
-                <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">{label}</span>
-                <div className="flex items-center gap-2">
-                    <span className="text-right text-sm text-gray-200 break-words">{formattedValue}</span>
-                    {copyable && value && formattedValue !== '—' && (
-                        <button
-                            onClick={() => copyToClipboard(value)}
-                            className="text-gray-500 hover:text-gray-300 transition-colors flex-shrink-0"
-                            title="Copy to clipboard"
-                        >
-                            <Copy size={14} />
-                        </button>
-                    )}
-                </div>
+    const formattedValue = formatValue(value)
+    return (
+        <div className="flex items-start justify-between gap-4 border-b border-[#3d2e5c] py-3 px-4 last:border-b-0">
+            <span className="text-xs font-semibold uppercase tracking-wider text-gray-400">{label}</span>
+            <div className="flex items-center gap-2">
+                <span className="text-right text-sm text-gray-200 break-words">{formattedValue}</span>
+                {copyable && value && formattedValue !== '—' && (
+                    <button
+                        onClick={() => copyToClipboard(value)}
+                        className="text-gray-500 hover:text-gray-300 transition-colors flex-shrink-0"
+                        title="Copy to clipboard"
+                    >
+                        <Copy size={14} />
+                    </button>
+                )}
             </div>
-        )
-    }
+        </div>
+    )
+}
+
+export function AssetDetailsModal({ isOpen, onClose, asset, loading = false }) {
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
@@ -178,13 +169,6 @@ export function AssetDetailsModal({ isOpen, onClose, asset, loading = false }) {
                                     <DetailRow label="Created" value={asset.createdAt ? new Date(asset.createdAt).toLocaleString() : ''} />
                                     <DetailRow label="Updated" value={asset.updatedAt ? new Date(asset.updatedAt).toLocaleString() : ''} />
                                 </div>
-
-                                {/* Copy Success Message */}
-                                {copied && (
-                                    <div className="rounded-md border border-green-500/40 bg-green-500/10 px-4 py-2 text-xs text-green-200">
-                                        ✓ Copied to clipboard
-                                    </div>
-                                )}
                             </div>
                         </div>
                     )}

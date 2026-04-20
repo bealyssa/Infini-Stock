@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/Dialog'
 import { Button } from './ui/Button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/Table'
-import { AlertCircle, Printer, X } from 'lucide-react'
+import { AlertCircle, Printer } from 'lucide-react'
 import QRCode from 'react-qr-code'
 import api from '../api/client'
 
@@ -16,35 +16,33 @@ export function HistoryModal({ isOpen, onClose, item, itemType = 'monitor' }) {
     const MAX_PREVIEW_LENGTH = 80
 
     useEffect(() => {
-        if (isOpen && item?.id) {
-            fetchLogs()
-            setExpandedLog(null)
-        }
-    }, [isOpen, item?.id])
+        if (!isOpen || !item?.id) return
 
-    const fetchLogs = async () => {
-        setLoading(true)
-        try {
-            const response = await api.get('/activity-logs', {
-                params: {
-                    limit: 100,
-                    itemId: item.id,
-                    itemType: itemType
-                }
-            })
-            const allLogs = response.data || []
-            setLogs(allLogs)
-            setCurrentPage(1)
-        } catch (error) {
-            console.error('Failed to fetch logs:', error)
-            setLogs([])
-        } finally {
-            setLoading(false)
+        async function fetchLogs() {
+            setLoading(true)
+            try {
+                const response = await api.get('/activity-logs', {
+                    params: {
+                        limit: 100,
+                        itemId: item.id,
+                        itemType: itemType
+                    }
+                })
+                const allLogs = response.data || []
+                setLogs(allLogs)
+                setCurrentPage(1)
+            } catch {
+                setLogs([])
+            } finally {
+                setLoading(false)
+            }
         }
-    }
+
+        fetchLogs()
+        setExpandedLog(null)
+    }, [isOpen, item?.id, itemType])
 
     const getDetailsText = (log) => {
-        let detailsText = '-'
         if (log.description) {
             try {
                 // Try to parse as JSON (new format with changes array)
@@ -56,13 +54,13 @@ export function HistoryModal({ isOpen, onClose, item, itemType = 'monitor' }) {
                         const after = typeof c.after === 'string' ? c.after : String(c.after)
                         return `${c.field}: ${before} → ${after}`
                     }).join('; ')
-                    detailsText = changes || '-'
+                    return changes || '-'
                 } else {
-                    detailsText = log.description
+                    return log.description
                 }
-            } catch (e) {
+            } catch {
                 // Legacy format - use as-is
-                detailsText = log.description
+                return log.description
             }
         } else {
             const details = []
@@ -72,9 +70,8 @@ export function HistoryModal({ isOpen, onClose, item, itemType = 'monitor' }) {
             if (log.oldLocation || log.newLocation) {
                 details.push(`Location: ${log.oldLocation || 'N/A'} → ${log.newLocation || 'N/A'}`)
             }
-            detailsText = details.length > 0 ? details.join('; ') : '-'
+            return details.length > 0 ? details.join('; ') : '-'
         }
-        return detailsText
     }
 
     const isTruncated = (detailsText) => {
@@ -251,7 +248,7 @@ export function HistoryModal({ isOpen, onClose, item, itemType = 'monitor' }) {
                                             if (parsed.changes && Array.isArray(parsed.changes)) {
                                                 changes = parsed.changes
                                             }
-                                        } catch (e) {
+                                        } catch {
                                             // If not JSON, show as plain text
                                             return (
                                                 <div className="text-sm text-gray-300">
@@ -319,7 +316,7 @@ export function PrintQRModal({ isOpen, onClose, item }) {
             <html>
                 <head>
                     <title>QR Code - ${item?.qrCode || item?.code || 'Print'}</title>
-                    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>
+                    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
                     <style>
                         body {
                             margin: 0;
@@ -370,7 +367,7 @@ export function PrintQRModal({ isOpen, onClose, item }) {
                         setTimeout(function() {
                             window.print();
                         }, 500);
-                    <\/script>
+                    </script>
                 </body>
             </html>
         `)
@@ -504,7 +501,7 @@ export function ChangeDetailsModal({ isOpen, onClose, log }) {
             if (parsed.changes && Array.isArray(parsed.changes)) {
                 changes = parsed.changes
             }
-        } catch (e) {
+        } catch {
             // If not JSON, try to parse as plain text
             if (log.description.includes(';')) {
                 // Legacy format - split by semicolon

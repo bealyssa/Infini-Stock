@@ -73,24 +73,6 @@ function formatShortDateLabel(date) {
     }).format(date)
 }
 
-function toInputDateValue(date) {
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
-    return `${year}-${month}-${day}`
-}
-
-function parseInputDate(value) {
-    if (!value) return null
-    // value is YYYY-MM-DD
-    const [y, m, d] = value.split('-').map((v) => Number(v))
-    if (!y || !m || !d) return null
-    const dt = new Date(y, m - 1, d)
-    if (Number.isNaN(dt.getTime())) return null
-    dt.setHours(0, 0, 0, 0)
-    return dt
-}
-
 function Dashboard() {
     const viewOnly = isViewOnly()
     const [assets, setAssets] = useState([])
@@ -158,13 +140,10 @@ function Dashboard() {
         const minutes = Math.floor(seconds / 60)
         const hours = Math.floor(minutes / 60)
 
-        let result = ''
-        if (seconds < 60) result = 'Just Now'
-        else if (minutes < 60) result = `${minutes}M Ago`
-        else if (hours < 24) result = `${hours}H Ago`
-        else result = lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-
-        return result
+        if (seconds < 60) return 'Just Now'
+        else if (minutes < 60) return `${minutes}M Ago`
+        else if (hours < 24) return `${hours}H Ago`
+        else return lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
 
     const LOG_PAGE_SIZE = 10 // Show 10 items per page for better overview
@@ -376,8 +355,8 @@ function Dashboard() {
 
                 {/* Charts + Recent Activity in one grid */}
                 <div className={`grid gap-5 mb-8 items-stretch ${viewOnly
-                        ? 'grid-cols-1 lg:grid-cols-2'
-                        : 'grid-cols-1 lg:grid-cols-3 lg:[grid-template-rows:auto_auto]'
+                    ? 'grid-cols-1 lg:grid-cols-2'
+                    : 'grid-cols-1 lg:grid-cols-3 lg:[grid-template-rows:auto_auto]'
                     }`}>
                     {!viewOnly && (
                         <Card className="lg:col-span-2 lg:row-start-1 flex flex-col min-h-[318px]">

@@ -33,9 +33,9 @@ function getPageModel(totalPages, currentPage) {
 }
 
 function TablePagination({ currentPage, totalPages, onPageChange, align = 'end', className = '' }) {
-    if (!totalPages) totalPages = 1
+    const safeTotal = !totalPages ? 1 : totalPages
 
-    const safeCurrent = Math.min(Math.max(1, currentPage || 1), totalPages)
+    const safeCurrent = Math.min(Math.max(1, currentPage || 1), safeTotal)
     const model = getPageModel(totalPages, safeCurrent)
     const justifyClass =
         align === 'center'
@@ -43,7 +43,6 @@ function TablePagination({ currentPage, totalPages, onPageChange, align = 'end',
             : align === 'start'
                 ? 'justify-start'
                 : 'justify-end'
-
     return (
         <div className={className}>
             <Pagination className={justifyClass}>

@@ -1,4 +1,4 @@
-import { Cpu, Download, Image, MoreHorizontal, Pencil, Plus, Package, Trash2, Activity, Trash, Printer, RefreshCw, Upload, Info, Eye } from 'lucide-react'
+import { Download, Image, MoreHorizontal, Pencil, Plus, Package, Trash2, Activity, Trash, Printer, RefreshCw, Upload, Info, Eye } from 'lucide-react'
 import { useEffect, useState, useRef } from 'react'
 import QRCode from 'react-qr-code'
 import { unitApi, monitorApi } from '../api'
@@ -7,7 +7,7 @@ import { capitalize } from '../lib/utils'
 import { clampRowCount, exportToCsv } from '../lib/export'
 import { canEditData, isViewOnly, isTechnicianLimitedOps, getTechnicianOperations } from '../lib/permissions'
 import { Button } from '../components/ui/Button'
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
+import { Card } from '../components/ui/Card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table'
 import FullPageLoader from '../components/FullPageLoader'
 import TablePagination from '../components/TablePagination'
@@ -177,16 +177,9 @@ function SystemUnits() {
         const file = e.target.files?.[0]
         if (!file) return
 
-        console.log('Image upload started:', {
-            fileName: file.name,
-            fileSize: file.size,
-            fileType: file.type
-        })
-
         // Validate file requirements
         const fileErrors = validateImageRequirements(file)
         if (fileErrors.length > 0) {
-            console.error('File validation errors:', fileErrors)
             fileErrors.forEach(err => {
                 addToast(err, 'error')
             })
@@ -200,13 +193,8 @@ function SystemUnits() {
             // Validate dimensions
             const img = new window.Image()
             img.onload = async () => {
-                console.log('Image loaded:', {
-                    width: img.width,
-                    height: img.height
-                })
                 const dimensionErrors = await validateImageDimensions(img)
                 if (dimensionErrors.length > 0) {
-                    console.error('Dimension validation errors:', dimensionErrors)
                     dimensionErrors.forEach(err => {
                         addToast(err, 'error')
                     })
@@ -215,18 +203,15 @@ function SystemUnits() {
                 }
 
                 setImageData(dataUrl)
-                console.log('Image upload successful')
                 addToast('Image uploaded successfully', 'success')
             }
             img.onerror = () => {
                 const err = 'Failed to load image. Please try another file.'
-                console.error('Image load error:', err)
                 addToast(err, 'error')
                 e.target.value = ''
             }
             img.src = dataUrl
-        } catch (err) {
-            console.error('Image processing error:', err)
+        } catch {
             addToast('Failed to process image', 'error')
             e.target.value = ''
         }
@@ -638,7 +623,7 @@ function SystemUnits() {
             })
             exportDialogState.onOpenChange(false)
             addToast(`Export successful - ${count} rows exported`, 'success')
-        } catch (err) {
+        } catch {
             addToast('Failed to export', 'error')
         } finally {
             setExporting(false)
@@ -666,7 +651,7 @@ function SystemUnits() {
             const linked = monitors.filter(m => m.linkedUnit && m.linkedUnit.id === unit.id)
             setLinkedMonitorsData(linked)
             setLinkedMonitorsViewOpen(true)
-        } catch (err) {
+        } catch {
             addToast('Failed to load linked monitors', 'error')
         }
     }

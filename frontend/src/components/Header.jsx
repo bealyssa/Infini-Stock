@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
 import { User } from 'lucide-react'
 import { Button } from './ui/Button'
 import { Input } from './ui/Input'
@@ -24,7 +23,6 @@ function getInitials(fullName) {
 }
 
 function Header() {
-    const location = useLocation()
     const [time, setTime] = useState('')
     const [date, setDate] = useState('')
     const [user, setUser] = useState(null)
@@ -32,29 +30,6 @@ function Header() {
 
     const accountDialog = useDialog()
     const menuRef = useRef(null)
-
-    const pageMeta = useMemo(() => {
-        const path = location.pathname || '/'
-        if (path === '/' || path === '') {
-            return { category: 'OVERVIEW', page: 'DASHBOARD' }
-        }
-        if (path.startsWith('/units')) {
-            return { category: 'DEVICE MANAGEMENT', page: 'SYSTEM UNITS' }
-        }
-        if (path.startsWith('/monitors')) {
-            return { category: 'DEVICE MANAGEMENT', page: 'MONITORS' }
-        }
-        if (path.startsWith('/qr-generator')) {
-            return { category: 'DEVICE MANAGEMENT', page: 'QR GENERATOR' }
-        }
-        if (path.startsWith('/logs')) {
-            return { category: 'ACCOUNT MANAGEMENT', page: 'ACTIVITY LOGS' }
-        }
-        if (path.startsWith('/admin/users')) {
-            return { category: 'ACCOUNT MANAGEMENT', page: 'MANAGE USERS' }
-        }
-        return { category: 'OVERVIEW', page: 'DASHBOARD' }
-    }, [location.pathname])
 
     const [infoForm, setInfoForm] = useState({ full_name: '', email: '' })
     const [passwordForm, setPasswordForm] = useState({

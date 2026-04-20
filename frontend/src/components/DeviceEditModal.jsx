@@ -27,14 +27,6 @@ const IMAGE_REQUIREMENTS = {
     maxDimensions: { width: 4000, height: 3000 },
 }
 
-const getImageRequirementsText = () => `
-Max Size: 5MB
-Min Size: 10KB
-Formats: JPG, PNG, WebP
-Min Dimensions: 400×300px
-Max Dimensions: 4000×3000px
-`.trim()
-
 function fileToDataUrl(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader()
@@ -77,7 +69,6 @@ export default function DeviceEditModal({
     const [units, setUnits] = useState([])
     const [imageData, setImageData] = useState(null)
     const [originalImageData, setOriginalImageData] = useState(null)
-    const [imageUrlInput, setImageUrlInput] = useState('')
     const [showValidationErrors, setShowValidationErrors] = useState(false)
 
     const [loadingMeta, setLoadingMeta] = useState(false)
@@ -103,8 +94,6 @@ export default function DeviceEditModal({
             description: device.description || '',
             notes: device.notes || '',
         })
-
-        setImageUrlInput('')
 
         let cancelled = false
 
@@ -249,13 +238,6 @@ export default function DeviceEditModal({
             setError(message)
             e.target.value = ''
         }
-    }
-
-    const handleUseImageUrl = () => {
-        const next = imageUrlInput.trim()
-        if (!next) return
-        setImageData(next)
-        setImageUrlInput('')
     }
 
     const handleSubmit = async (e) => {

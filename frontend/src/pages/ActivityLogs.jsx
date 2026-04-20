@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from 'react'
 import { activityApi } from '../api'
 import { Badge } from '../components/ui/Badge'
 import { capitalize } from '../lib/utils'
-import { Card, CardContent, CardTitle } from '../components/ui/Card'
+import { Card } from '../components/ui/Card'
 import { Input } from '../components/ui/Input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table'
 import { Button } from '../components/ui/Button'
@@ -137,16 +137,6 @@ function ActivityLogs() {
             swap: 'secondary',
         }
         return variants[action] || 'secondary'
-    }
-
-    const getInitials = (value) => {
-        const text = (value || '').trim()
-        if (!text) return '—'
-        const parts = text.split(/\s+/).filter(Boolean)
-        const first = parts[0]?.[0] || ''
-        const last = parts.length > 1 ? parts[parts.length - 1]?.[0] : ''
-        const initials = `${first}${last}`.toUpperCase()
-        return initials || text.slice(0, 2).toUpperCase()
     }
 
     if (loading) {
@@ -291,18 +281,17 @@ function ActivityLogs() {
 
                                         // Get changes description - prefer detailed description field
                                         let changesDisplay = '—'
-                                        let changeCount = 0
 
                                         if (log.description) {
                                             try {
                                                 const parsed = JSON.parse(log.description)
                                                 if (parsed.changes && Array.isArray(parsed.changes)) {
-                                                    changeCount = parsed.changes.length
+                                                    const changeCount = parsed.changes.length
                                                     // Build a summary of fields changed
                                                     const fields = parsed.changes.map(c => c.field).join(', ')
                                                     changesDisplay = `${changeCount} field${changeCount !== 1 ? 's' : ''} changed: ${fields}`
                                                 }
-                                            } catch (e) {
+                                            } catch {
                                                 // Not JSON format, use as-is
                                                 changesDisplay = log.description
                                             }

@@ -93,15 +93,6 @@ function Users() {
         return ''
     }
 
-    const getInitials = (value) => {
-        const text = (value || '').trim()
-        if (!text) return '—'
-        const parts = text.split(/\s+/).filter(Boolean)
-        const first = parts[0]?.[0] || ''
-        const last = parts.length > 1 ? parts[parts.length - 1]?.[0] : ''
-        const initials = `${first}${last}`.toUpperCase()
-        return initials || text.slice(0, 2).toUpperCase()
-    }
 
     const formatRole = (role) => {
         const value = (role || '').trim()
@@ -175,21 +166,20 @@ function Users() {
 
     // Fetch users on mount
     useEffect(() => {
+        async function fetchUsers() {
+            try {
+                setLoading(true)
+                const response = await adminApi.listUsers()
+                setUsers(response.data)
+            } catch (err) {
+                showToast(err.response?.data?.message || err.message || 'Failed to fetch users', 'error')
+            } finally {
+                setLoading(false)
+            }
+        }
+
         fetchUsers()
     }, [])
-
-    const fetchUsers = async () => {
-        try {
-            setLoading(true)
-            const response = await adminApi.listUsers()
-            setUsers(response.data)
-        } catch (err) {
-            showToast(err.response?.data?.message || err.message || 'Failed to fetch users', 'error')
-            console.error('Fetch users error:', err)
-        } finally {
-            setLoading(false)
-        }
-    }
 
     const handleOpenDialog = (user = null) => {
         if (!canEdit) {
@@ -288,8 +278,6 @@ function Users() {
         }
 
         try {
-            const token = localStorage.getItem('authToken')
-
             if (isEditMode) {
                 // Update user
                 const response = await adminApi.updateUser(editingUserId, formData)
@@ -312,7 +300,6 @@ function Users() {
             handleCloseDialog()
         } catch (err) {
             showToast(err.response?.data?.message || err.message || 'Failed to save user', 'error')
-            console.error('Save user error:', err)
         }
     }
 
@@ -327,7 +314,6 @@ function Users() {
             setUsers(users.filter((u) => u.id !== userId))
         } catch (err) {
             showToast(err.response?.data?.message || err.message || 'Failed to delete user', 'error')
-            console.error('Delete user error:', err)
         }
     }
 
@@ -341,7 +327,6 @@ function Users() {
             showToast(message, 'success')
         } catch (err) {
             showToast(err.response?.data?.message || err.message || 'Failed to update user', 'error')
-            console.error('Toggle active error:', err)
         }
     }
 
@@ -441,7 +426,7 @@ function Users() {
                             <TableBody>
                                 {pagedUsers.map((user) => (
                                     <TableRow key={user._id}
-                                        onClick={() => openDetails(user)}
+                                        onClick={() => handleOpenDialog(user)}
                                         className="hover:bg-white/5 transition-colors cursor-pointer"
                                     >
                                         <TableCell className="px-6 py-3" onClick={(e) => e.stopPropagation()}>

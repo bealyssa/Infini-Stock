@@ -7,7 +7,7 @@ import { capitalize } from '../lib/utils'
 import { clampRowCount, exportToCsv } from '../lib/export'
 import { canEditData, isViewOnly, isTechnicianLimitedOps, getTechnicianOperations } from '../lib/permissions'
 import { Button } from '../components/ui/Button'
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card'
+import { Card } from '../components/ui/Card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/Table'
 import FullPageLoader from '../components/FullPageLoader'
 import TablePagination from '../components/TablePagination'
@@ -214,7 +214,7 @@ function Monitors() {
                 e.target.value = ''
             }
             img.src = dataUrl
-        } catch (err) {
+        } catch {
             addToast('Failed to process image', 'error')
             e.target.value = ''
         }
@@ -524,8 +524,8 @@ function Monitors() {
             try {
                 const { data } = await unitApi.listUnits()
                 setUnitsList(data)
-            } catch (err) {
-                console.error('Failed to fetch units:', err)
+            } catch {
+                // Failed to fetch units
             }
         }
     }
@@ -594,7 +594,7 @@ function Monitors() {
             })
             exportDialogState.onOpenChange(false)
             addToast(`Export successful - ${count} rows exported`, 'success')
-        } catch (err) {
+        } catch {
             addToast('Failed to export', 'error')
         } finally {
             setExporting(false)
@@ -1323,7 +1323,7 @@ function Monitors() {
                                                             <DropdownItem
                                                                 icon={Pencil}
                                                                 label="Edit"
-                                                                onClick={() => handleEditClick(monitor)}
+                                                                onClick={() => openEdit(monitor)}
                                                             />
                                                         )}
                                                         <DropdownItem
