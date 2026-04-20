@@ -21,6 +21,8 @@ const allowedOrigins = [
     'http://localhost:3000',
     'http://localhost:8080',
     'http://192.168.1.2:5000',
+    // Add your deployed frontend URL here when ready
+    // 'https://your-frontend-domain.com',
 ]
 
 function isOriginAllowed(origin) {

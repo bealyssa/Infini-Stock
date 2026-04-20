@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken')
 const { PERMISSIONS, ROLE_HIERARCHY } = require('../config/roles')
 
-const JWT_SECRET = 'dev-auth-secret-change-me'
+const JWT_SECRET = process.env.JWT_SECRET || 'dev-auth-secret-change-me'
 
 function getTokenFromRequest(req) {
     const raw = req.headers.authorization || ''
