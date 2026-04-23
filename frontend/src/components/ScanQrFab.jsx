@@ -449,10 +449,10 @@ export default function ScanQrFab() {
                 type={asset?.type}
                 device={asset}
                 onSaved={handleSaved}
-                onNotify={(msg, level) => {
+                onNotify={() => {
                     // Replace with your toast/notification system if you have one
                     // e.g. toast.success(msg) / toast.error(msg)
-                    console.log(`[${level}]`, msg)
+                    // TODO: Implement notification system
                 }}
             />
         </>
