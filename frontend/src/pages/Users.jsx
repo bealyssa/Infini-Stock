@@ -134,21 +134,28 @@ function Users() {
     }
 
     const toggleSelectAll = () => {
-        if (selectedUsers.size === pagedUsers.length) {
+        if (selectedUsers.size === filteredUsers.length) {
             setSelectedUsers(new Set())
         } else {
-            setSelectedUsers(new Set(pagedUsers.map(u => u._id)))
+            setSelectedUsers(new Set(filteredUsers.map(u => u.id)))
         }
     }
 
     const handleBulkDelete = async () => {
         if (selectedUsers.size === 0) return
+
+        const currentUserId = getCurrentUserId()
+        if (selectedUsers.has(currentUserId)) {
+            showToast('You cannot delete your own account', 'error')
+            return
+        }
+
         if (!confirm(`Delete ${selectedUsers.size} user(s)? This cannot be undone.`)) return
 
         try {
             const idsToDelete = Array.from(selectedUsers)
             await Promise.all(idsToDelete.map(id => adminApi.deleteUser(id)))
-            setUsers(prev => prev.filter(u => !idsToDelete.includes(u._id)))
+            setUsers(prev => prev.filter(u => !idsToDelete.includes(u.id)))
             setSelectedUsers(new Set())
             showToast(`${selectedUsers.size} user(s) deleted successfully`, 'success')
         } catch (err) {
@@ -303,7 +310,22 @@ function Users() {
         }
     }
 
+    const getCurrentUserId = () => {
+        try {
+            const user = JSON.parse(localStorage.getItem('user') || '{}')
+            return user?.id
+        } catch {
+            return null
+        }
+    }
+
     const handleDeleteUser = async (userId) => {
+        const currentUserId = getCurrentUserId()
+        if (currentUserId === userId) {
+            showToast("You cannot delete your own account", 'error')
+            return
+        }
+
         if (!window.confirm('Are you sure you want to delete this user?')) {
             return
         }
@@ -318,6 +340,12 @@ function Users() {
     }
 
     const handleToggleActive = async (userId, currentStatus) => {
+        const currentUserId = getCurrentUserId()
+        if (currentUserId === userId) {
+            showToast("You cannot deactivate your own account", 'error')
+            return
+        }
+
         try {
             const response = await adminApi.updateUser(userId, { is_active: !currentStatus })
             setUsers(
@@ -411,8 +439,11 @@ function Users() {
                                     <TableHead className="px-6 py-3 text-left text-sm font-semibold text-lavender-200 w-12">
                                         <input
                                             type="checkbox"
-                                            checked={selectedUsers.size === pagedUsers.length && pagedUsers.length > 0}
+                                            checked={filteredUsers.length > 0 && selectedUsers.size === filteredUsers.length}
                                             onChange={toggleSelectAll}
+                                            ref={el => {
+                                                if (el) el.indeterminate = selectedUsers.size > 0 && selectedUsers.size < filteredUsers.length
+                                            }}
                                             className="appearance-none w-4 h-4 border-2 border-[#3d2e5c] bg-[#0f0a1a] rounded cursor-pointer checked:bg-lavender-600 checked:border-lavender-600 checked:bg-[length:100%_100%] checked:[background-image:url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0id2hpdGUiPjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTE2LjcwNyA1LjI5M2ExIDEgMCAwIDEgMCAxLjQxNGwtOCA4YTEgMSAwIDAgMS0xLjQxNCAwbC00LTRhMSAxIDAgMCAxIDEuNDE0LTEuNDE0TDggMTIuNTg2bDcuMjkzLTcuMjkzYTEgMSAwIDAgMSAxLjQxNCAweiIgY2xpcC1ydWxlPSJldmVub2RkIi8+PC9zdmc+')] checked:bg-center checked:bg-no-repeat transition-colors"
                                         />
                                     </TableHead>
@@ -425,15 +456,18 @@ function Users() {
                             </TableHeader>
                             <TableBody>
                                 {pagedUsers.map((user) => (
-                                    <TableRow key={user._id}
+                                    <TableRow key={user.id}
                                         onClick={() => handleOpenDialog(user)}
                                         className="hover:bg-white/5 transition-colors cursor-pointer"
                                     >
                                         <TableCell className="px-6 py-3" onClick={(e) => e.stopPropagation()}>
                                             <input
                                                 type="checkbox"
-                                                checked={selectedUsers.has(user._id)}
-                                                onChange={() => toggleUserSelection(user._id)}
+                                                checked={selectedUsers.has(user.id)}
+                                                onChange={e => {
+                                                    e.stopPropagation();
+                                                    toggleUserSelection(user.id)
+                                                }}
                                                 className="appearance-none w-4 h-4 border-2 border-[#3d2e5c] bg-[#0f0a1a] rounded cursor-pointer checked:bg-lavender-600 checked:border-lavender-600 checked:bg-[length:100%_100%] checked:[background-image:url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0id2hpdGUiPjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTE2LjcwNyA1LjI5M2ExIDEgMCAwIDEgMCAxLjQxNGwtOCA4YTEgMSAwIDAgMS0xLjQxNCAwbC00LTRhMSAxIDAgMCAxIDEuNDE0LTEuNDE0TDggMTIuNTg2bDcuMjkzLTcuMjkzYTEgMSAwIDAgMSAxLjQxNCAweiIgY2xpcC1ydWxlPSJldmVub2RkIi8+PC9zdmc+')] checked:bg-center checked:bg-no-repeat transition-colors"
                                             />
                                         </TableCell>

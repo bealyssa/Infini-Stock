@@ -1,7 +1,11 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/Dialog'
+import { useState } from 'react'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, useDialog } from './ui/Dialog'
 import { Badge } from './ui/Badge'
-import { Copy } from 'lucide-react'
+import { Button } from './ui/Button'
+import { Copy, Pencil } from 'lucide-react'
 import QRCode from 'react-qr-code'
+import DeviceEditModal from './DeviceEditModal'
+
 
 const STATUS_LABELS = {
     active: 'Active',
@@ -49,17 +53,35 @@ const DetailRow = ({ label, value, copyable = false }) => {
     )
 }
 
-export function AssetDetailsModal({ isOpen, onClose, asset, loading = false }) {
+export function AssetDetailsModal({ isOpen, onClose, asset, loading = false, onAssetUpdate = null }) {
+    const editDialogState = useDialog()
+    const [editingAsset, setEditingAsset] = useState(null)
 
     return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="w-[1400px] h-[90vh] flex flex-col max-w-[95vw]">
-                <DialogHeader>
-                    <DialogTitle>Asset Details</DialogTitle>
-                    <DialogDescription>
-                        {formatValue(asset?.deviceName) !== '—' ? asset?.deviceName : `QR: ${asset?.qrCode || 'Unknown'}`}
-                    </DialogDescription>
-                </DialogHeader>
+        <>
+            <Dialog open={isOpen} onOpenChange={onClose}>
+                <DialogContent className="w-[1400px] h-[90vh] flex flex-col max-w-[95vw]">
+<DialogHeader>
+                    <div className="flex-1">
+                        <DialogTitle>Asset Details</DialogTitle>
+                        <DialogDescription>
+                            {formatValue(asset?.deviceName) !== '—' ? asset?.deviceName : `QR: ${asset?.qrCode || 'Unknown'}`}
+                        </DialogDescription>
+                    </div>
+                    { asset && (
+                        <Button
+                            onClick={() => {
+                                setEditingAsset(asset)
+                                editDialogState.onOpenChange(true)
+                            }}
+                            className="gap-2 ml-auto"
+                                variant="default"
+                            >
+                                <Pencil size={16} />
+                                Edit
+                            </Button>
+                        )}
+                    </DialogHeader>
 
                 {/* Scrollable Content */}
                 <div className="flex-1 overflow-y-auto pr-4">
@@ -175,5 +197,32 @@ export function AssetDetailsModal({ isOpen, onClose, asset, loading = false }) {
                 </div>
             </DialogContent>
         </Dialog>
+
+        {/* Edit Asset Modal */}
+        {editingAsset && (
+            <DeviceEditModal
+                open={editDialogState.open}
+                onOpenChange={(open) => {
+                    editDialogState.onOpenChange(open)
+                    if (!open) {
+                        setEditingAsset(null)
+                    }
+                }}
+                type={editingAsset.type === 'monitor' ? 'monitor' : 'unit'}
+                device={editingAsset}
+                onNotify={() => {
+                    // Toast notifications handled by DeviceEditModal
+                }}
+                onSaved={(updatedAsset) => {
+                    // Update the asset with new data
+                    if (onAssetUpdate) {
+                        onAssetUpdate(updatedAsset)
+                    }
+                    setEditingAsset(null)
+                    editDialogState.onOpenChange(false)
+                }}
+            />
+        )}
+        </>
     )
 }

@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, useDialog } from './ui/Dialog'
 import { Button } from './ui/Button'
 
+
 function Sidebar() {
     const [open, setOpen] = useState(true)
     const location = useLocation()
@@ -15,6 +16,7 @@ function Sidebar() {
     const userRole = user?.role
 
     const menuGroups = [
+        // Overview - available to all authenticated users
         {
             title: 'Overview',
             items: [{ path: '/', label: 'Dashboard', icon: BarChart3 }],
@@ -82,6 +84,7 @@ function Sidebar() {
                                 <h1 className="text-xl font-bold text-white">
                                     Infini-Stock
                                 </h1>
+                    
                             </div>
                         </div>
                     </div>

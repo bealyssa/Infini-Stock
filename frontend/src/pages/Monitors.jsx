@@ -25,6 +25,7 @@ function Monitors() {
     const viewOnly = isViewOnly()
     const isTechnicianLimited = isTechnicianLimitedOps()
     const technicianOps = getTechnicianOperations()
+ 
     const dialogState = useDialog()
     const exportDialogState = useDialog()
     const detailsDialogState = useDialog()
@@ -33,7 +34,6 @@ function Monitors() {
     const [loading, setLoading] = useState(true)
     const [searchQuery, setSearchQuery] = useState('')
     const [statusFilter, setStatusFilter] = useState('all')
-    const [conditionFilter, setConditionFilter] = useState('all')
     const [exportRows, setExportRows] = useState('50')
     const [exporting, setExporting] = useState(false)
     const [selectedMonitor, setSelectedMonitor] = useState(null)
@@ -415,21 +415,20 @@ function Monitors() {
     const filteredMonitors = monitors.filter((monitor) => {
         const matchesStatus =
             statusFilter === 'all' || monitor.status === statusFilter
-        const matchesCondition =
-            conditionFilter === 'all' || monitor.condition === conditionFilter
-        const haystack = [
-            monitor.deviceName,
-            monitor.qrCode,
-            monitor.linkedUnit?.deviceName,
-            monitor.description,
-            monitor.createdBy,
-        ]
-            .filter(Boolean)
-            .join(' ')
-            .toLowerCase()
-        const matchesSearch = haystack.includes(searchQuery.toLowerCase())
+        const normalizedQuery = searchQuery.trim().toLowerCase()
+        if (normalizedQuery === '') return matchesStatus
 
-        return matchesStatus && matchesCondition && matchesSearch
+        const searchFields = [
+            String(monitor.id || '').toLowerCase(),
+            (monitor.deviceName || '').toLowerCase(),
+            (monitor.qrCode || '').toLowerCase(),
+            (monitor.modelType || '').toLowerCase(),
+            (monitor.status || '').toLowerCase(),
+            (monitor.description || '').toLowerCase(),
+        ]
+        const matchesSearch = searchFields.some(field => field.includes(normalizedQuery))
+
+        return matchesStatus && matchesSearch
     })
 
     const ITEMS_PER_PAGE = 10
@@ -437,7 +436,7 @@ function Monitors() {
 
     useEffect(() => {
         setCurrentPage(1)
-    }, [searchQuery, statusFilter, conditionFilter, monitors.length])
+    }, [searchQuery, statusFilter, monitors.length])
 
     const totalPages = Math.max(1, Math.ceil(filteredMonitors.length / ITEMS_PER_PAGE))
     const pagedMonitors = filteredMonitors.slice(
@@ -827,11 +826,15 @@ function Monitors() {
                                                     Serial Number
                                                 </label>
                                                 <Input
+                                                    type="number"
                                                     name="serialNumber"
-                                                    placeholder="e.g., DELL-U2723DE-001"
+                                                    placeholder="e.g., 12345"
                                                     value={formData.serialNumber}
                                                     onChange={handleInputChange}
+                                                    min="10000"
+                                                    max="99999"
                                                 />
+                                                <p className="mt-1 text-xs text-gray-500">Exactly 5 digits required</p>
                                             </div>
 
                                             {/* Condition */}
@@ -1180,19 +1183,6 @@ function Monitors() {
                                 </button>
                             ))}
                         </div>
-                        <div className="rounded-full border border-[#3d2e5c] bg-[#16162E]">
-                            <Select
-                                value={conditionFilter}
-                                onChange={(e) => setConditionFilter(e.target.value)}
-                                className="text-sm py-1.5 rounded-full text-lavender-300"
-                            >
-                                <option value="all">All Conditions</option>
-                                <option value="new">New</option>
-                                <option value="good">Good</option>
-                                <option value="fair">Fair</option>
-                                <option value="poor">Poor</option>
-                            </Select>
-                        </div>
                     </div>
 
                     <div className="flex gap-2 w-full lg:w-auto lg:max-w-sm items-center">
@@ -1209,7 +1199,7 @@ function Monitors() {
                         <Input
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search monitors by name, QR, or linked unit"
+                            placeholder="Search by ID, device, model, QR code..."
                         />
                     </div>
                 </div>
@@ -1235,11 +1225,11 @@ function Monitors() {
                                             className="appearance-none w-4 h-4 border-2 border-[#3d2e5c] bg-[#0f0a1a] rounded cursor-pointer checked:bg-lavender-600 checked:border-lavender-600 checked:bg-[length:100%_100%] checked:[background-image:url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0id2hpdGUiPjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTE2LjcwNyA1LjI5M2ExIDEgMCAwIDEgMCAxLjQxNGwtOCA4YTEgMSAwIDAgMS0xLjQxNCAwbC00LTRhMSAxIDAgMCAxIDEuNDE0LTEuNDE0TDggMTIuNTg2bDcuMjkzLTcuMjkzYTEgMSAwIDAgMSAxLjQxNCAweiIgY2xpcC1ydWxlPSJldmVub2RkIi8+PC9zdmc+')] checked:bg-center checked:bg-no-repeat transition-colors"
                                         />
                                     </TableHead>
+                                    <TableHead>ID</TableHead>
                                     <TableHead>Device</TableHead>
                                     <TableHead>QR Code</TableHead>
                                     <TableHead>Model</TableHead>
                                     <TableHead>Status</TableHead>
-                                    <TableHead>Condition</TableHead>
                                     <TableHead>Linked Unit</TableHead>
                                     <TableHead>Last Updated</TableHead>
                                     <TableHead className="text-right">Actions</TableHead>
@@ -1259,6 +1249,14 @@ function Monitors() {
                                                     onChange={() => toggleMonitorSelection(monitor.id)}
                                                     className="appearance-none w-4 h-4 border-2 border-[#3d2e5c] bg-[#0f0a1a] rounded cursor-pointer checked:bg-lavender-600 checked:border-lavender-600 checked:bg-[length:100%_100%] checked:[background-image:url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyMCAyMCIgZmlsbD0id2hpdGUiPjxwYXRoIGZpbGwtcnVsZT0iZXZlbm9kZCIgZD0iTTE2LjcwNyA1LjI5M2ExIDEgMCAwIDEgMCAxLjQxNGwtOCA4YTEgMSAwIDAgMS0xLjQxNCAwbC00LTRhMSAxIDAgMCAxIDEuNDE0LTEuNDE0TDggMTIuNTg2bDcuMjkzLTcuMjkzYTEgMSAwIDAgMSAxLjQxNCAweiIgY2xpcC1ydWxlPSJldmVub2RkIi8+PC9zdmc+')] checked:bg-center checked:bg-no-repeat transition-colors"
                                                 />
+                                            </TableCell>
+                                            <TableCell className="max-w-[200px]">
+                                                <code
+                                                    title={monitor.id}
+                                                    className="inline-block text-xs bg-gray-900 text-white px-3 py-2 rounded font-mono max-w-[180px] truncate"
+                                                >
+                                                    {`INSTOCK-${String(monitor.id).padStart(4, '0')}`}
+                                                </code>
                                             </TableCell>
                                             <TableCell className="cursor-pointer max-w-[260px]">
                                                 <div className="truncate">
@@ -1281,11 +1279,6 @@ function Monitors() {
                                             <TableCell>
                                                 <Badge variant={getStatusVariant(monitor.status)}>
                                                     {capitalize(monitor.status)}
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Badge variant={monitor.condition === 'poor' ? 'secondary' : monitor.condition === 'fair' ? 'warning' : 'success'}>
-                                                    {capitalize(monitor.condition || 'unknown')}
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-gray-300 max-w-[180px] truncate">

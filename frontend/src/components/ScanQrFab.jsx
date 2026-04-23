@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { BrowserQRCodeReader } from '@zxing/browser'
-import { Camera, QrCode, Upload, XCircle, Printer } from 'lucide-react'
+import { Camera, QrCode, Upload, XCircle, Printer, Pencil } from 'lucide-react'
 import { assetApi, monitorApi, unitApi } from '../api'
 import { Button } from './ui/Button'
 import {
@@ -14,11 +14,14 @@ import {
 } from './ui/Dialog'
 import { PrintQRModal } from './ActionModals'
 import { AssetDetailsModal } from './AssetDetailsModal'
+import DeviceEditModal from './DeviceEditModal'
+
 
 
 export default function ScanQrFab() {
     const dialogState = useDialog()
     const detailsModalState = useDialog()
+    const editDialogState = useDialog()
     const [mode, setMode] = useState('camera') // 'camera' | 'upload'
 
     const [busy, setBusy] = useState(false)
@@ -27,6 +30,7 @@ export default function ScanQrFab() {
     const [printQRModalOpen, setPrintQRModalOpen] = useState(false)
     const [cameraPermission, setCameraPermission] = useState('prompt') // 'prompt' | 'granted' | 'denied'
     const [requestingPermission, setRequestingPermission] = useState(false)
+    const [editingAsset, setEditingAsset] = useState(null)
 
     const videoRef = useRef(null)
     const controlsRef = useRef(null)
@@ -378,6 +382,20 @@ export default function ScanQrFab() {
                     <DialogFooter className="pt-4 flex gap-2">
                         {asset ? (
                             <>
+                              
+                                    <Button
+                                        type="button"
+                                        variant="default"
+                                        onClick={() => {
+                                            setEditingAsset(asset)
+                                            editDialogState.onOpenChange(true)
+                                        }}
+                                        className="gap-2"
+                                    >
+                                        <Pencil size={16} />
+                                        Edit
+                                    </Button>
+                        
                                 <Button
                                     type="button"
                                     variant="default"
@@ -422,6 +440,30 @@ export default function ScanQrFab() {
                 asset={asset}
                 loading={busy}
             />
+
+            {/* Edit Asset Modal */}
+            {editingAsset && (
+                <DeviceEditModal
+                    open={editDialogState.open}
+                    onOpenChange={(open) => {
+                        editDialogState.onOpenChange(open)
+                        if (!open) {
+                            setEditingAsset(null)
+                        }
+                    }}
+                    type={editingAsset.type === 'monitor' ? 'monitor' : 'unit'}
+                    device={editingAsset}
+                    onNotify={() => {
+                        // Toast notifications handled by DeviceEditModal
+                    }}
+                    onSaved={(updatedAsset) => {
+                        // Update the asset state with new data
+                        setAsset(prev => ({ ...prev, ...updatedAsset }))
+                        setEditingAsset(null)
+                        editDialogState.onOpenChange(false)
+                    }}
+                />
+            )}
         </>
     )
 }
