@@ -88,7 +88,7 @@ function Login() {
                             <LogIn className="text-[#171717]" size={24} />
                         </div>
                         <h1 className="text-3xl font-bold text-white mb-2">
-                            Infini-Stock
+                            InfoTrack
                         </h1>
                         <p className="text-gray-400">
                             Sign in to your account
@@ -144,7 +144,7 @@ function Login() {
 
                 {/* Footer */}
                 <p className="text-center text-gray-600 text-sm mt-8">
-                    © 2024 Infini-Stock. All rights reserved.
+                    © 2024 InfoTrack. All rights reserved.
                 </p>
             </div>
         </div>
